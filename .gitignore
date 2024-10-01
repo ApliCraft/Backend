@@ -1,3 +1,4 @@
+# NUXT JS IS DISSABLED IN GITIGNORE
 # Logs
 logs
 *.log
@@ -88,8 +89,8 @@ web_modules/
 out
 
 # Nuxt.js build / generate output
-.nuxt
-dist
+# .nuxt
+# dist
 
 # Gatsby files
 .cache/
