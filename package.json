@@ -4,18 +4,18 @@
   "description": "The API backend for the app.",
   "main": "dist/app.js",
   "scripts": {
-    "app": "nodemon dist/index.js",
+    "start": "nodemon dist/index.js",
     "build": "tsc --watch",
-    "dev": "npm-run-all --parallel build app"
+    "dev": "npm-run-all --parallel build start"
   },
   "keywords": [],
   "author": "zaksiu12s",
   "license": "MIT",
   "dependencies": {
-    "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "joi": "^17.13.3",
     "mongoose": "^8.7.0"
   },
   "devDependencies": {
@@ -24,6 +24,7 @@
     "@types/node": "^22.7.4",
     "nodemon": "^3.1.7",
     "npm-run-all": "^4.1.5",
+    "touch-cli": "^0.0.1",
     "typescript": "^5.6.2"
   }
 }
