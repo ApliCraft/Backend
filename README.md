@@ -30,7 +30,7 @@ Full backend for the app
 
    `PORT=[website port]`
 
-   ![alt text](image.png)
+   ![alt text](./assets/image.png)
 
 6. **Run the app/build/run** as development environment:
 
