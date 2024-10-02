@@ -1,5 +1,5 @@
 {
-  "name": "api",
+  "name": "backend",
   "version": "0.0.1",
   "description": "The API backend for the app.",
   "main": "dist/server.js",
