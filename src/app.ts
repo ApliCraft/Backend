@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from "express";
+import express, { Application, Request, Response, Router } from "express";
 import cors from "cors";
 
 // Import routes
@@ -14,7 +14,7 @@ app.use(express.urlencoded({ extended: false }));
 // Use the imported routes
 app.use("/api/v1/users", userRoutes);
 
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (req: Request, res: Response): void => {
   res.send('API running...');
 });
 
