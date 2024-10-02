@@ -26,7 +26,13 @@ Full backend for the app
    npm i
    ```
 
-5. **Run the app/build/run** as development environment:
+5. **(optional)** Create .env file with
+
+   `PORT=[website port]`
+
+   ![alt text](image.png)
+
+6. **Run the app/build/run** as development environment:
 
    ```
     npm start
