@@ -1,6 +1,6 @@
 # Backend
 
-Full backend for the app
+Full backend for the app.
 
 ## How to setup
 
