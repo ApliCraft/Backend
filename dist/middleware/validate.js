@@ -2,12 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const validate = (schema) => {
     return (req, res, next) => {
-        const { error } = schema.validate(req.body);
-        if (error) {
-            res.status(400).json({ message: error.details[0].message });
-            return;
+        try {
+            schema.parse(req.body);
+            next();
         }
-        next();
+        catch (error) {
+            res.status(400).json({ message: error });
+        }
     };
 };
 exports.default = validate;

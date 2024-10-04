@@ -1,15 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import Joi from 'joi';
+import { z, ZodSchema } from 'zod';
 
-const validate = (schema: Joi.Schema): (req: Request, res: Response, next: NextFunction) => void => {
+const validate = (schema: ZodSchema): (req: Request, res: Response, next: NextFunction) => void => {
     return (req: Request, res: Response, next: NextFunction): void => {
-        const { error } = schema.validate(req.body);
-        if (error) {
-            res.status(400).json({ message: error.details[0].message });
-            return;
+        try {
+            schema.parse(req.body);
+            next();
+        } catch (error) {
+            res.status(400).json({ message: error });
         }
-
-        next();
     }
 }
 

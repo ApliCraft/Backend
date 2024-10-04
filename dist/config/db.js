@@ -8,7 +8,7 @@ require("dotenv/config");
 // Specifies the mongoDB port
 const MONGO_PORT = process.env.MONGO_URI || "localhost:27017";
 // Tries to connect to DB with specified PORT
-//  - If sucseeds returns 1 and logs the DB host
+//  - If succeeds returns 1 and logs the DB host
 //  - If fails then returns 0 and logs an error
 const connectDB = async () => {
     try {
