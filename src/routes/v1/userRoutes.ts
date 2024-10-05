@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { getUser } from "../../controllers/userController";
+import { getUser, createUser } from "../../controllers/userController";
 import validate from "../../middleware/validate";
-import userValidator from "../../utils/validators/userValidator";
-
+import UserValidatorSchema from "../../utils/validators/userValidator";
 
 const router: Router = Router();
 
-router.get("/getUser", validate(userValidator), getUser);
+router.get("/getUser", validate(UserValidatorSchema), getUser);
+router.post("/createUser", validate(UserValidatorSchema), createUser);
 
 export default router;
