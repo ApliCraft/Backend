@@ -105,6 +105,30 @@ const deleteUser = async (req, res) => {
     const userName = body.name;
     const userEmail = body.email;
     const userPassword = body.password;
+    try {
+        const userData = await searchUser(userName, userEmail);
+        if (!userData) {
+            res.status(statusCodes_1.HttpStatusCode.NOT_FOUND).send('User not found');
+            return;
+        }
+        // checks if the password is correct
+        const isMatch = await bcrypt_1.default.compare(userPassword, userData.password);
+        if (!isMatch) {
+            res
+                .status(statusCodes_1.HttpStatusCode.UNAUTHORIZED)
+                .send('Incorrect password');
+            return;
+        }
+        const result = await userModel_1.default.deleteOne({ _id: userData._id });
+        console.log(result);
+        res.status(statusCodes_1.HttpStatusCode.NO_CONTENT).json();
+    }
+    catch (error) {
+        console.log(error);
+        res
+            .status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER)
+            .send('Internal server error');
+    }
 };
 exports.deleteUser = deleteUser;
 // Searches database for user with email or name then return user data or null if user not found

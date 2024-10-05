@@ -106,11 +106,39 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 }
 
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as ICreateUserValidatorSchema;
+    const body = req.body as IGetUserValidatorSchema;
 
     const userName = body.name;
     const userEmail = body.email;
     const userPassword = body.password;
+
+    try {
+        const userData = await searchUser(userName, userEmail);
+        if (!userData) {
+            res.status(HttpStatusCode.NOT_FOUND).send('User not found');
+            return;
+        }
+
+        // checks if the password is correct
+        const isMatch = await bcrypt.compare(userPassword, userData.password);
+        if (!isMatch) {
+            res
+                .status(HttpStatusCode.UNAUTHORIZED)
+                .send('Incorrect password');
+            return;
+        }
+
+
+
+        const result = await UserSchema.deleteOne({ _id: userData._id });
+        console.log(result);
+        res.status(HttpStatusCode.NO_CONTENT).json();
+    } catch (error) {
+        console.log(error);
+        res
+            .status(HttpStatusCode.INTERNAL_SERVER)
+            .send('Internal server error');
+    }
 }
 
 // Searches database for user with email or name then return user data or null if user not found

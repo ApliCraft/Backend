@@ -10,5 +10,6 @@ const userValidator_1 = require("../../utils/validators/userValidator");
 const router = (0, express_1.Router)();
 router.get("/getUser", (0, validate_1.default)(userValidator_1.GetUserValidatorSchema), userController_1.getUser);
 router.post("/createUser", (0, validate_1.default)(userValidator_1.CreateUserValidatorSchema), userController_1.createUser);
+router.delete("/deleteUser", (0, validate_1.default)(userValidator_1.GetUserValidatorSchema), userController_1.deleteUser);
 exports.default = router;
 //# sourceMappingURL=userRoutes.js.map

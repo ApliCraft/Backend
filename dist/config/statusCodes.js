@@ -5,6 +5,7 @@ var HttpStatusCode;
 (function (HttpStatusCode) {
     HttpStatusCode[HttpStatusCode["OK"] = 200] = "OK";
     HttpStatusCode[HttpStatusCode["CREATED"] = 201] = "CREATED";
+    HttpStatusCode[HttpStatusCode["NO_CONTENT"] = 204] = "NO_CONTENT";
     HttpStatusCode[HttpStatusCode["BAD_REQUEST"] = 400] = "BAD_REQUEST";
     HttpStatusCode[HttpStatusCode["UNAUTHORIZED"] = 401] = "UNAUTHORIZED";
     HttpStatusCode[HttpStatusCode["FORBIDDEN"] = 403] = "FORBIDDEN";
