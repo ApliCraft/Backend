@@ -1,7 +1,8 @@
 # Backend
 
 Full backend for the app.
-Specify TODO in TODO.md
+
+**Specify TODO in TODO.md**
 
 ## How to setup
 
