@@ -3,52 +3,93 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createUser = exports.getUser = void 0;
+exports.deleteUser = exports.createUser = exports.getUser = void 0;
 const userModel_1 = __importDefault(require("../models/userModel"));
+const statusCodes_1 = require("../config/statusCodes");
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const getUser = (req, res) => {
     const body = req.body;
     const userName = body.name;
     const userEmail = body.email;
     const userPassword = body.password;
-    res.status(200).send(`User with name: ${userName}, email: ${userEmail}, password: ${userPassword}`);
+    res.status(statusCodes_1.HttpStatusCode.OK).send(`User with name: ${userName}, email: ${userEmail}, password: ${userPassword}`);
 };
 exports.getUser = getUser;
 const createUser = async (req, res) => {
+    // save the request body to body variable with correct types 
     const body = req.body;
     const userName = body.name;
     const userEmail = body.email;
     const userPassword = body.password;
+    // searches the database for the user
     try {
-        const userExists = await userModel_1.default.findOne({
-            $or: [
-                { email: userEmail },
-                { name: userName }
-            ]
-        });
-        if (userExists) {
-            res.status(400).json({ message: 'User already exists' });
+        // if user was found then responds with conflict status and returns
+        if (await searchUser(userName, userEmail)) {
+            res
+                .status(statusCodes_1.HttpStatusCode.CONFLICT)
+                .json({ message: 'User already exists' });
             return;
         }
     }
     catch (error) {
         console.log(error);
-        res.status(500).json({ message: 'User already exists' });
+        res
+            .status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER)
+            .json({ message: 'MongoDB error' });
         return;
     }
+    // the hashing for the password
+    let hash;
+    try {
+        // tries to hash the password using bcrypt
+        hash = await bcrypt_1.default.hash(userPassword, 10);
+    }
+    catch (error) {
+        console.log(error);
+        res
+            .status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER)
+            .json({ message: 'Hashing failed' });
+        return;
+    }
+    // creates new user with hashed password and saves it to the database
     const user = new userModel_1.default({
         name: userName,
         email: userEmail,
-        password: userPassword,
+        password: hash,
     });
     try {
         await user.save();
     }
     catch (error) {
         console.log(error);
-        res.status(500).json({ message: 'User already exists' });
+        res
+            .status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER)
+            .json({ message: 'User already exists' });
         return;
     }
-    res.status(200).send(`User with name: ${userName}, email: ${userEmail}, password: ${userPassword} created successfully.`);
+    res
+        .status(statusCodes_1.HttpStatusCode.OK)
+        .send(`User with name: ${userName}, email: ${userEmail}, password: ${userPassword} created successfully.`);
 };
 exports.createUser = createUser;
+const deleteUser = async (req, res) => {
+    const body = req.body;
+    const userName = body.name;
+    const userEmail = body.email;
+    const userPassword = body.password;
+};
+exports.deleteUser = deleteUser;
+// Searches database for user with email or name then return user data or null if user not found
+async function searchUser(userName, userEmail) {
+    const userData = await userModel_1.default.findOne({
+        $or: [
+            { email: userEmail },
+            { name: userName }
+        ]
+    });
+    if (userData) {
+        return userData;
+    }
+    return null;
+}
 //# sourceMappingURL=userController.js.map
