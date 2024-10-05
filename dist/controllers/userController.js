@@ -36,7 +36,10 @@ const getUser = async (req, res) => {
             email: userData.email,
             signInDate: userData.signInDate,
         };
-        res.status(statusCodes_1.HttpStatusCode.OK).json(userResponseData);
+        // const secretKey: string = process.env.ACCESS_TOKEN_SECRET!.toString();
+        // // Create JWT token with user data
+        // const accessToken = jst.sign(userResponseData, secretKey);
+        res.status(statusCodes_1.HttpStatusCode.OK).json(/*accessToken*/ userResponseData);
     }
     catch (error) {
         // The errors caught during the searchUser execution (mongodb errors) or bcrypt comparison 
@@ -83,7 +86,7 @@ const createUser = async (req, res) => {
         email: userEmail,
         password: hash,
         signInDate: new Date(),
-        active: false,
+        isActive: false,
         lastLoginDate: new Date(),
     });
     // Saving user to mongoDB database

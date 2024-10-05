@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { HttpStatusCode } from '../config/statusCodes';
 import { ZodSchema } from 'zod';
 
-const validate = (schema: ZodSchema): (req: Request, res: Response, next: NextFunction) => void => {
+export const validate = (schema: ZodSchema): (req: Request, res: Response, next: NextFunction) => void => {
     return (req: Request, res: Response, next: NextFunction): void => {
         try {
             schema.parse(req.body);
@@ -12,4 +14,24 @@ const validate = (schema: ZodSchema): (req: Request, res: Response, next: NextFu
     }
 }
 
-export default validate;
+// export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
+//     const authHeader = req.headers['authorization'];
+//     const token = authHeader?.split(' ')[1];
+
+//     if (!token) {
+//         next();
+//         return;
+//     }
+
+//     const secretKey: string = process.env.ACCESS_TOKEN_SECRET!.toString();
+
+//     jwt.verify(token, secretKey, (err, user) => {
+//         if (err) {
+//             res.status(HttpStatusCode.FORBIDDEN).json({ message: 'Invalid token' });
+//             return;
+//         }
+
+//         req.body.token = user;
+//         next();
+//     })
+// }

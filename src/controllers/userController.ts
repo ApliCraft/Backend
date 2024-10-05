@@ -1,5 +1,6 @@
 // Importing express and hashing libraries
 import { Request, Response } from 'express';
+import jst from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 // Importing user validator schemas for validating requests 
@@ -40,7 +41,12 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
             signInDate: userData.signInDate,
         };
 
-        res.status(HttpStatusCode.OK).json(userResponseData);
+        // const secretKey: string = process.env.ACCESS_TOKEN_SECRET!.toString();
+
+        // // Create JWT token with user data
+        // const accessToken = jst.sign(userResponseData, secretKey);
+
+        res.status(HttpStatusCode.OK).json(/*accessToken*/userResponseData);
     } catch (error) {
         // The errors caught during the searchUser execution (mongodb errors) or bcrypt comparison 
         console.log(error);
@@ -87,7 +93,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         email: userEmail,
         password: hash,
         signInDate: new Date(),
-        active: false,
+        isActive: false,
         lastLoginDate: new Date(),
     });
 

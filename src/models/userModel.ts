@@ -5,7 +5,7 @@ export interface IUserSchema {
     name: string,
     email: string,
     password: string,
-    active: boolean,
+    isActive: boolean,
     signInDate: Date,
     lastLoginDate: Date,
 }
@@ -30,7 +30,7 @@ const UserSchema = new Schema<IUserSchema>({
         default: Date.now,
         required: true,
     },
-    active: {
+    isActive: {
         type: Boolean,
         default: false,
         required: true,
