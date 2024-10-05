@@ -19,7 +19,18 @@ const UserSchema = new mongoose_1.Schema({
     signInDate: {
         type: Date,
         default: Date.now,
+        required: true,
     },
+    active: {
+        type: Boolean,
+        default: false,
+        required: true,
+    },
+    lastLoginDate: {
+        type: Date,
+        default: Date.now,
+        required: true,
+    }
 });
 const User = (0, mongoose_1.model)('User', UserSchema);
 exports.default = User;

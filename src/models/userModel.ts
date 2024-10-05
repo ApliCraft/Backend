@@ -5,7 +5,9 @@ export interface IUserSchema {
     name: string,
     email: string,
     password: string,
+    active: boolean,
     signInDate: Date,
+    lastLoginDate: Date,
 }
 
 const UserSchema = new Schema<IUserSchema>({
@@ -26,7 +28,18 @@ const UserSchema = new Schema<IUserSchema>({
     signInDate: {
         type: Date,
         default: Date.now,
+        required: true,
     },
+    active: {
+        type: Boolean,
+        default: false,
+        required: true,
+    },
+    lastLoginDate: {
+        type: Date,
+        default: Date.now,
+        required: true,
+    }
 })
 
 const User = model<IUserSchema>('User', UserSchema);

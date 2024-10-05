@@ -87,6 +87,8 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         email: userEmail,
         password: hash,
         signInDate: new Date(),
+        active: false,
+        lastLoginDate: new Date(),
     });
 
     // Saving user to mongoDB database
