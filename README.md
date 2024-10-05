@@ -11,6 +11,8 @@ Full backend for the app.
    - [![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/en/download/prebuilt-installer) [![NPM](https://img.shields.io/badge/NPM-%23CB3837.svg?style=for-the-badge&logo=npm&logoColor=white)](https://nodejs.org/en/download/prebuilt-installer)
      - node used version: `v20.2.0`
      - npm used version: `9.6.6`
+   - [![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com)
+     - used version: `7.0`
 
 2. **[Create git to github ssh key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).**
 3. **Clone repo:**
