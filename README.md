@@ -32,6 +32,8 @@ Full backend for the app.
 
    `PORT=[website port]`
 
+   `MONGO_URI=[mongodb url with db name example: (mongodb://localhost:27017/ApliCraft)]`
+
    ![alt text](./assets/image.png)
 
 6. **Run the app/build/run** as development environment:
