@@ -17,13 +17,13 @@ Full backend for the app.
 2. **[Create git to github ssh key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).**
 3. **Clone repo:**
 
-   ```
+   ```powershell|terminal|shell
    git clone https://github.com/ApliCraft/Backend
    ```
 
 4. **cd into repo and install needed packages:**
 
-   ```
+   ```powershell|terminal|shell
    cd Backend
    npm i
    ```
@@ -38,7 +38,7 @@ Full backend for the app.
 
 6. **Run the app/build/run** as development environment:
 
-   ```
+   ```powershell|terminal|shell
     npm start
     npm run build
     npm run dev
