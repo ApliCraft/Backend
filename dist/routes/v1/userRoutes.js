@@ -6,9 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const userController_1 = require("../../controllers/userController");
 const validate_1 = __importDefault(require("../../middleware/validate"));
-const userValidator_1 = __importDefault(require("../../utils/validators/userValidator"));
+const userValidator_1 = require("../../utils/validators/userValidator");
 const router = (0, express_1.Router)();
-router.get("/getUser", (0, validate_1.default)(userValidator_1.default), userController_1.getUser);
-router.post("/createUser", (0, validate_1.default)(userValidator_1.default), userController_1.createUser);
+router.get("/getUser", (0, validate_1.default)(userValidator_1.GetUserValidatorSchema), userController_1.getUser);
+router.post("/createUser", (0, validate_1.default)(userValidator_1.CreateUserValidatorSchema), userController_1.createUser);
 exports.default = router;
 //# sourceMappingURL=userRoutes.js.map

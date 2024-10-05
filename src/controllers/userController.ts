@@ -1,22 +1,51 @@
 import { Request, Response } from 'express';
-import { IUserValidatorSchema } from '../utils/validators/userValidator';
-import UserSchema, { IUserSchema } from "../models/userModel"
-import { HttpStatusCode } from '../config/statusCodes';
 import bcrypt from 'bcrypt';
 
-export const getUser = (req: Request, res: Response): void => {
-    const body = req.body as IUserValidatorSchema;
+import { IGetUserValidatorSchema, ICreateUserValidatorSchema } from '../utils/validators/userValidator';
+import UserSchema, { IUserSchema } from "../models/userModel"
+import { HttpStatusCode } from '../config/statusCodes';
 
+export const getUser = async (req: Request, res: Response): Promise<void> => {
+    const body = req.body as IGetUserValidatorSchema;
     const userName = body.name;
     const userEmail = body.email;
     const userPassword = body.password;
 
-    res.status(HttpStatusCode.OK).send(`User with name: ${userName}, email: ${userEmail}, password: ${userPassword}`);
+    try {
+        const userData = await searchUser(userName, userEmail);
+        if (!userData) {
+            res.status(HttpStatusCode.NOT_FOUND).send('User not found');
+            return;
+        }
+
+        // checks if the password is correct
+        const isMatch = await bcrypt.compare(userPassword, userData.password);
+        if (!isMatch) {
+            res
+                .status(HttpStatusCode.UNAUTHORIZED)
+                .send('Incorrect password');
+            return;
+        }
+
+        const userResponseData = {
+            name: userData.name,
+            email: userData.email,
+            signInDate: userData.signInDate,
+        };
+
+        res
+            .status(HttpStatusCode.OK)
+            .json(userResponseData);
+    } catch (error) {
+        res
+            .status(HttpStatusCode.INTERNAL_SERVER)
+            .send('Internal server error');
+    }
 }
 
 export const createUser = async (req: Request, res: Response): Promise<void> => {
     // save the request body to body variable with correct types 
-    const body = req.body as IUserValidatorSchema;
+    const body = req.body as ICreateUserValidatorSchema;
 
     const userName = body.name;
     const userEmail = body.email;
@@ -57,6 +86,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         name: userName,
         email: userEmail,
         password: hash,
+        signInDate: new Date(),
     });
 
     try {
@@ -76,7 +106,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 }
 
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
-    const body = req.body as IUserValidatorSchema;
+    const body = req.body as ICreateUserValidatorSchema;
 
     const userName = body.name;
     const userEmail = body.email;
@@ -84,7 +114,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 }
 
 // Searches database for user with email or name then return user data or null if user not found
-async function searchUser(userName: string, userEmail?: string): Promise<IUserSchema | null> {
+async function searchUser(userName?: string | undefined, userEmail?: string | undefined): Promise<IUserSchema | null> {
     const userData = await UserSchema.findOne({
         $or: [
             { email: userEmail },

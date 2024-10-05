@@ -15,7 +15,11 @@ const UserSchema = new mongoose_1.Schema({
     password: {
         type: String,
         required: true,
-    }
+    },
+    signInDate: {
+        type: Date,
+        default: Date.now,
+    },
 });
 const User = (0, mongoose_1.model)('User', UserSchema);
 exports.default = User;
