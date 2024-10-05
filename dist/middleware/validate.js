@@ -12,3 +12,4 @@ const validate = (schema) => {
     };
 };
 exports.default = validate;
+//# sourceMappingURL=validate.js.map

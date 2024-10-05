@@ -10,3 +10,4 @@ const userValidator_1 = __importDefault(require("../../utils/validators/userVali
 const router = (0, express_1.Router)();
 router.get("/getUser", (0, validate_1.default)(userValidator_1.default), userController_1.getUser);
 exports.default = router;
+//# sourceMappingURL=userRoutes.js.map
