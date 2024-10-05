@@ -4,15 +4,42 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.createUser = exports.getUser = void 0;
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const statusCodes_1 = require("../config/statusCodes");
-const bcrypt_1 = __importDefault(require("bcrypt"));
-const getUser = (req, res) => {
+const getUser = async (req, res) => {
     const body = req.body;
     const userName = body.name;
     const userEmail = body.email;
     const userPassword = body.password;
-    res.status(statusCodes_1.HttpStatusCode.OK).send(`User with name: ${userName}, email: ${userEmail}, password: ${userPassword}`);
+    try {
+        const userData = await searchUser(userName, userEmail);
+        if (!userData) {
+            res.status(statusCodes_1.HttpStatusCode.NOT_FOUND).send('User not found');
+            return;
+        }
+        // checks if the password is correct
+        const isMatch = await bcrypt_1.default.compare(userPassword, userData.password);
+        if (!isMatch) {
+            res
+                .status(statusCodes_1.HttpStatusCode.UNAUTHORIZED)
+                .send('Incorrect password');
+            return;
+        }
+        const userResponseData = {
+            name: userData.name,
+            email: userData.email,
+            signInDate: userData.signInDate,
+        };
+        res
+            .status(statusCodes_1.HttpStatusCode.OK)
+            .json(userResponseData);
+    }
+    catch (error) {
+        res
+            .status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER)
+            .send('Internal server error');
+    }
 };
 exports.getUser = getUser;
 const createUser = async (req, res) => {
@@ -56,6 +83,7 @@ const createUser = async (req, res) => {
         name: userName,
         email: userEmail,
         password: hash,
+        signInDate: new Date(),
     });
     try {
         await user.save();

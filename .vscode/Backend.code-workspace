@@ -1,7 +1,14 @@
 {
   "folders": [
     {
+<<<<<<< HEAD
       "path": "../../Aplicraft"
     }
   ]
+=======
+      "path": ".."
+    }
+  ],
+  "settings": {}
+>>>>>>> 68a688068a4b024bb3b9b37f1792ff35eb6f4f45
 }
