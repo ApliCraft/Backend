@@ -19,15 +19,21 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     const userEmail = body.email;
     const userPassword = body.password;
 
-    const userExists = await UserSchema.findOne({
-        $or: [
-            { email: userEmail },
-            { name: userName }
-        ]
-    });
+    try {
+        const userExists = await UserSchema.findOne({
+            $or: [
+                { email: userEmail },
+                { name: userName }
+            ]
+        });
 
-    if (userExists) {
-        res.status(400).json({ message: 'User already exists' });
+        if (userExists) {
+            res.status(400).json({ message: 'User already exists' });
+            return;
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'User already exists' });
         return;
     }
 
@@ -37,7 +43,14 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         password: userPassword,
     });
 
-    await user.save();
+    try {
+        await user.save();
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'User already exists' });
+        return;
+    }
 
     res.status(200).send(`User with name: ${userName}, email: ${userEmail}, password: ${userPassword} created successfully.`);
 }

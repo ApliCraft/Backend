@@ -18,14 +18,21 @@ const createUser = async (req, res) => {
     const userName = body.name;
     const userEmail = body.email;
     const userPassword = body.password;
-    const userExists = await userModel_1.default.findOne({
-        $or: [
-            { email: userEmail },
-            { name: userName }
-        ]
-    });
-    if (userExists) {
-        res.status(400).json({ message: 'User already exists' });
+    try {
+        const userExists = await userModel_1.default.findOne({
+            $or: [
+                { email: userEmail },
+                { name: userName }
+            ]
+        });
+        if (userExists) {
+            res.status(400).json({ message: 'User already exists' });
+            return;
+        }
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'User already exists' });
         return;
     }
     const user = new userModel_1.default({
@@ -33,7 +40,14 @@ const createUser = async (req, res) => {
         email: userEmail,
         password: userPassword,
     });
-    await user.save();
+    try {
+        await user.save();
+    }
+    catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'User already exists' });
+        return;
+    }
     res.status(200).send(`User with name: ${userName}, email: ${userEmail}, password: ${userPassword} created successfully.`);
 };
 exports.createUser = createUser;
