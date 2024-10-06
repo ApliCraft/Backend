@@ -32,9 +32,27 @@ Specify TODO in TODO.md
 
 5. **(optional)** Create .env file with
 
-   `PORT=[website port]`
+   `PORT=[website port number]`
 
-   `MONGO_URI=[mongodb url with db name example: (mongodb://localhost:27017/ApliCraft)]`
+   - used for the website port
+   - default value: 4000
+
+   `MONGO_URI=[mongodb URI]`
+
+   - used for mongoDB connection with specified URI
+   - uri must be formatted as specified:
+     `mongodb://[ip address]:[port number]/[database name]`
+   - default value: mongodb://localhost:27017/ApliCraft
+
+   `ACCESS_TOKEN_SECRET=[secret string]`
+
+   - used to JWT authentication
+   - default value: random words
+
+   `SALT_ROUNDS=[number]`
+
+   - used to encrypting passwords with bcrypt
+   - default value: 10
 
    ![alt text](./assets/image.png)
 
