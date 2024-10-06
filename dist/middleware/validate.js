@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validate = void 0;
+const statusCodes_1 = require("../config/statusCodes");
 const validate = (schema) => {
     return (req, res, next) => {
         try {
@@ -8,7 +9,7 @@ const validate = (schema) => {
             next();
         }
         catch (error) {
-            res.status(400).json({ message: error });
+            res.status(statusCodes_1.HttpStatusCode.BAD_REQUEST).json({ message: error });
         }
     };
 };

@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 import { HttpStatusCode } from '../config/statusCodes';
 import { ZodSchema } from 'zod';
 
@@ -9,7 +8,7 @@ export const validate = (schema: ZodSchema): (req: Request, res: Response, next:
             schema.parse(req.body);
             next();
         } catch (error) {
-            res.status(400).json({ message: error });
+            res.status(HttpStatusCode.BAD_REQUEST).json({ message: error });
         }
     }
 }

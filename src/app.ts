@@ -4,6 +4,7 @@ import connectToMongoDB from './config/db';
 
 // Import routes
 import userRoutes from './routes/v1/userRoutes';
+import { errorHandler } from './middleware/errors';
 
 const app: Application = express();
 // let isConnectedToMongoDB = false;
@@ -23,6 +24,9 @@ app.use(express.urlencoded({ extended: false }));
 
 // Use the imported routes
 app.use("/api/v1/users", userRoutes);
+
+// Error handling middleware
+app.use(errorHandler);
 
 app.get('/', (req: Request, res: Response): void => {
   res.send('API running...');

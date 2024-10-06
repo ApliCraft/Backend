@@ -8,6 +8,7 @@ const cors_1 = __importDefault(require("cors"));
 const db_1 = __importDefault(require("./config/db"));
 // Import routes
 const userRoutes_1 = __importDefault(require("./routes/v1/userRoutes"));
+const errors_1 = require("./middleware/errors");
 const app = (0, express_1.default)();
 // let isConnectedToMongoDB = false;
 //database connection
@@ -23,6 +24,8 @@ app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: false }));
 // Use the imported routes
 app.use("/api/v1/users", userRoutes_1.default);
+// Error handling middleware
+app.use(errors_1.errorHandler);
 app.get('/', (req, res) => {
     res.send('API running...');
 });

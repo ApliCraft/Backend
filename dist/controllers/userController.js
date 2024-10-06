@@ -14,7 +14,7 @@ const statusCodes_1 = require("../config/statusCodes");
 const userServices_1 = require("../services/userServices");
 const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
 // Function used to get user data from the database with email | name and password
-const getUser = async (req, res) => {
+const getUser = async (req, res, next) => {
     // Casting body as IGetUserValidatorSchema interface and writing data to variables
     // userName or userEmail will be provided
     const body = req.body;
@@ -42,20 +42,19 @@ const getUser = async (req, res) => {
             signInDate: userData.signInDate,
         };
         const secretKey = process.env.ACCESS_TOKEN_SECRET?.toString() || "21793t21v3ks";
-        // // Create JWT token with user data
+        // Create JWT token with user data
         const accessToken = jsonwebtoken_1.default.sign({ userResponseData }, secretKey);
         res.status(statusCodes_1.HttpStatusCode.OK).json({ accessToken, userResponseData });
     }
-    catch (error) {
-        // The errors caught during the searchUser execution (mongodb errors) or bcrypt comparison 
-        console.log(error);
-        res.status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER).send('Internal server error');
+    catch (err) {
+        next(err);
+        return;
     }
 };
 exports.getUser = getUser;
 // Creates a new user with the specified data email, name and password if the user does not exist 
 // (name and email must not be in the db)
-const createUser = async (req, res) => {
+const createUser = async (req, res, next) => {
     // Casting body as ICreateUserValidatorSchema interface and writing data to variables
     const body = req.body;
     const userName = body.name;
@@ -68,10 +67,9 @@ const createUser = async (req, res) => {
             return;
         }
     }
-    catch (error) {
+    catch (err) {
         // Mongodb internal errors
-        console.log(error);
-        res.status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER).json({ message: 'MongoDB error' });
+        next(err);
         return;
     }
     // The hashing for the password
@@ -79,10 +77,9 @@ const createUser = async (req, res) => {
     try {
         hash = await bcrypt_1.default.hash(userPassword, SALT_ROUNDS);
     }
-    catch (error) {
+    catch (err) {
         // Hashing password errors
-        console.log(error);
-        res.status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER).json({ message: 'Hashing failed' });
+        next(err);
         return;
     }
     // Creates new user with hashed password 
@@ -98,16 +95,15 @@ const createUser = async (req, res) => {
         await user.save();
         res.status(statusCodes_1.HttpStatusCode.OK).send(`User with name: ${userName} and email: ${userEmail} created successfully.`);
     }
-    catch (error) {
+    catch (err) {
         // MongoDB internal errors
-        console.log(error);
-        res.status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER).json({ message: 'MongoDB error' });
+        next(err);
         return;
     }
 };
 exports.createUser = createUser;
 // Removes user with the specified email | name and password if exists
-const deleteUser = async (req, res) => {
+const deleteUser = async (req, res, next) => {
     // Casting body as IGetUserValidatorSchema interface and writing data to variables
     const body = req.body;
     const userName = body.name;
@@ -130,10 +126,10 @@ const deleteUser = async (req, res) => {
         await userModel_1.default.deleteOne({ _id: userData._id });
         res.status(statusCodes_1.HttpStatusCode.NO_CONTENT).json();
     }
-    catch (error) {
+    catch (err) {
         // MongoDB internal errors (deleteOne or findOne) or bcrypt comparison errors
-        console.log(error);
-        res.status(statusCodes_1.HttpStatusCode.INTERNAL_SERVER).send('Internal server error');
+        next(err);
+        return;
     }
 };
 exports.deleteUser = deleteUser;
