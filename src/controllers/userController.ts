@@ -9,6 +9,10 @@ import { IGetUserValidatorSchema, ICreateUserValidatorSchema } from '../utils/va
 import UserSchema, { IUserSchema } from "../models/userModel"
 // Importing HTTP status codes for response status codes
 import { HttpStatusCode } from '../config/statusCodes';
+// Importing user services for database operations
+import { searchUser } from '../services/userServices';
+
+const SALT_ROUNDS: number = Number(process.env.SALT_ROUNDS) || 10;
 
 // Function used to get user data from the database with email | name and password
 export const getUser = async (req: Request, res: Response): Promise<void> => {
@@ -36,17 +40,18 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
 
         // Creates a new userResponseData with user data that will be sent to the client
         const userResponseData = {
+            _id: userData._id,
             name: userData.name,
             email: userData.email,
             signInDate: userData.signInDate,
         };
 
-        // const secretKey: string = process.env.ACCESS_TOKEN_SECRET!.toString();
+        const secretKey: string = process.env.ACCESS_TOKEN_SECRET?.toString() || "21793t21v3ks";
 
         // // Create JWT token with user data
-        // const accessToken = jst.sign(userResponseData, secretKey);
+        const accessToken = jst.sign({ userResponseData }, secretKey);
 
-        res.status(HttpStatusCode.OK).json(/*accessToken*/userResponseData);
+        res.status(HttpStatusCode.OK).json({ accessToken, userResponseData });
     } catch (error) {
         // The errors caught during the searchUser execution (mongodb errors) or bcrypt comparison 
         console.log(error);
@@ -79,7 +84,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
     // The hashing for the password
     let hash: string;
     try {
-        hash = await bcrypt.hash(userPassword, 10);
+        hash = await bcrypt.hash(userPassword, SALT_ROUNDS);
     } catch (error) {
         // Hashing password errors
         console.log(error);
@@ -92,7 +97,6 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         name: userName,
         email: userEmail,
         password: hash,
-        signInDate: new Date(),
         isActive: false,
         lastLoginDate: new Date(),
     });
@@ -143,19 +147,3 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
     }
 }
 
-// Searches database for user with email | name then return user data or null if user not found
-// Errors must be handled outside the function (try/catch block)
-async function searchUser(userName?: string | undefined, userEmail?: string | undefined): Promise<IUserSchema | null> {
-    const userData = await UserSchema.findOne({
-        $or: [
-            { email: userEmail },
-            { name: userName }
-        ]
-    });
-
-    if (userData) {
-        return userData;
-    }
-
-    return null;
-}

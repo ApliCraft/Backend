@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model, Types } from 'mongoose';
 
 export interface IUserSchema {
     _id?: string,
@@ -6,11 +6,15 @@ export interface IUserSchema {
     email: string,
     password: string,
     isActive: boolean,
-    signInDate: Date,
+    signInDate?: Date,
     lastLoginDate: Date,
 }
 
 const UserSchema = new Schema<IUserSchema>({
+    _id: {
+        type: Types.ObjectId,
+        auto: true,
+    },
     name: {
         type: String,
         required: true,
@@ -28,7 +32,7 @@ const UserSchema = new Schema<IUserSchema>({
     signInDate: {
         type: Date,
         default: Date.now,
-        required: true,
+        auto: true,
     },
     isActive: {
         type: Boolean,

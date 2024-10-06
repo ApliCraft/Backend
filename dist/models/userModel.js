@@ -2,6 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const UserSchema = new mongoose_1.Schema({
+    _id: {
+        type: mongoose_1.Types.ObjectId,
+        auto: true,
+    },
     name: {
         type: String,
         required: true,
@@ -19,7 +23,7 @@ const UserSchema = new mongoose_1.Schema({
     signInDate: {
         type: Date,
         default: Date.now,
-        required: true,
+        auto: true,
     },
     isActive: {
         type: Boolean,

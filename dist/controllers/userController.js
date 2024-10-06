@@ -4,11 +4,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.createUser = exports.getUser = void 0;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 //Importing user model and interface for mongoose validation
 const userModel_1 = __importDefault(require("../models/userModel"));
 // Importing HTTP status codes for response status codes
 const statusCodes_1 = require("../config/statusCodes");
+// Importing user services for database operations
+const userServices_1 = require("../services/userServices");
+const SALT_ROUNDS = Number(process.env.SALT_ROUNDS) || 10;
 // Function used to get user data from the database with email | name and password
 const getUser = async (req, res) => {
     // Casting body as IGetUserValidatorSchema interface and writing data to variables
@@ -19,7 +23,7 @@ const getUser = async (req, res) => {
     const userPassword = body.password;
     try {
         // Searches user by name or email and returns the user if found
-        const userData = await searchUser(userName, userEmail);
+        const userData = await (0, userServices_1.searchUser)(userName, userEmail);
         if (!userData) {
             res.status(statusCodes_1.HttpStatusCode.NOT_FOUND).send('User not found');
             return;
@@ -32,14 +36,15 @@ const getUser = async (req, res) => {
         }
         // Creates a new userResponseData with user data that will be sent to the client
         const userResponseData = {
+            _id: userData._id,
             name: userData.name,
             email: userData.email,
             signInDate: userData.signInDate,
         };
-        // const secretKey: string = process.env.ACCESS_TOKEN_SECRET!.toString();
+        const secretKey = process.env.ACCESS_TOKEN_SECRET?.toString() || "21793t21v3ks";
         // // Create JWT token with user data
-        // const accessToken = jst.sign(userResponseData, secretKey);
-        res.status(statusCodes_1.HttpStatusCode.OK).json(/*accessToken*/ userResponseData);
+        const accessToken = jsonwebtoken_1.default.sign({ userResponseData }, secretKey);
+        res.status(statusCodes_1.HttpStatusCode.OK).json({ accessToken, userResponseData });
     }
     catch (error) {
         // The errors caught during the searchUser execution (mongodb errors) or bcrypt comparison 
@@ -58,7 +63,7 @@ const createUser = async (req, res) => {
     const userPassword = body.password;
     // Searches for user with the same email or name, if found responds to client
     try {
-        if (await searchUser(userName, userEmail)) {
+        if (await (0, userServices_1.searchUser)(userName, userEmail)) {
             res.status(statusCodes_1.HttpStatusCode.CONFLICT).json({ message: 'User already exists' });
             return;
         }
@@ -72,7 +77,7 @@ const createUser = async (req, res) => {
     // The hashing for the password
     let hash;
     try {
-        hash = await bcrypt_1.default.hash(userPassword, 10);
+        hash = await bcrypt_1.default.hash(userPassword, SALT_ROUNDS);
     }
     catch (error) {
         // Hashing password errors
@@ -85,7 +90,6 @@ const createUser = async (req, res) => {
         name: userName,
         email: userEmail,
         password: hash,
-        signInDate: new Date(),
         isActive: false,
         lastLoginDate: new Date(),
     });
@@ -111,7 +115,7 @@ const deleteUser = async (req, res) => {
     const userPassword = body.password;
     try {
         // Searching for user in the db with userName or userEmail
-        const userData = await searchUser(userName, userEmail);
+        const userData = await (0, userServices_1.searchUser)(userName, userEmail);
         if (!userData) {
             res.status(statusCodes_1.HttpStatusCode.NOT_FOUND).send('User not found');
             return;
@@ -133,18 +137,4 @@ const deleteUser = async (req, res) => {
     }
 };
 exports.deleteUser = deleteUser;
-// Searches database for user with email | name then return user data or null if user not found
-// Errors must be handled outside the function (try/catch block)
-async function searchUser(userName, userEmail) {
-    const userData = await userModel_1.default.findOne({
-        $or: [
-            { email: userEmail },
-            { name: userName }
-        ]
-    });
-    if (userData) {
-        return userData;
-    }
-    return null;
-}
 //# sourceMappingURL=userController.js.map
