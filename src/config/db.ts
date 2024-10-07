@@ -2,7 +2,13 @@ import mongoose, { Mongoose } from "mongoose";
 import "dotenv/config";
 
 // Specifies the mongoDB port
-const MONGO_URI: string = process.env.MONGO_URI || "mongodb://localhost:27017/ApliCraft";
+let MONGO_URI: string = process.env.MONGO_URI || "mongodb://localhost:27017/ApliCraft";
+
+if (MONGO_URI.indexOf(":27015") != -1) {
+    MONGO_URI = "mongodb://localhost:27017";
+}
+
+console.log(MONGO_URI);
 
 // Tries to connect to DB with specified PORT
 //  - If succeeds returns 1 and logs the DB host
