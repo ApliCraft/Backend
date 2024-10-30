@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUser = exports.createUser = exports.getUser = void 0;
+exports.updateUser = exports.deleteUser = exports.createUser = exports.getUser = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 //Importing user model and interface for mongoose validation
@@ -133,4 +133,45 @@ const deleteUser = async (req, res, next) => {
     }
 };
 exports.deleteUser = deleteUser;
+const updateUser = async (req, res, next) => {
+    const body = req.body;
+    const userName = body.name;
+    const userEmail = body.email;
+    const userPassword = body.password;
+    const newUserName = body.newName;
+    const newUserPassword = body.newPassword;
+    const newUserEmail = body.newEmail;
+    try {
+        // Searching for user in the db with userName or userEmail
+        const userData = await (0, userServices_1.searchUser)(userName, userEmail);
+        if (!userData) {
+            res.status(statusCodes_1.HttpStatusCode.NOT_FOUND).send('User not found');
+            return;
+        }
+        // Checking if the password is correct
+        const isMatch = await bcrypt_1.default.compare(userPassword, userData.password);
+        if (!isMatch) {
+            res.status(statusCodes_1.HttpStatusCode.UNAUTHORIZED).send('Incorrect password');
+            return;
+        }
+        // Updating with specified _id
+        if (newUserName) {
+            await userModel_1.default.findOneAndUpdate({ _id: userData._id }, { name: newUserName });
+        }
+        if (newUserPassword) {
+            const hash = await bcrypt_1.default.hash(newUserPassword, SALT_ROUNDS);
+            await userModel_1.default.findOneAndUpdate({ _id: userData._id }, { password: hash });
+        }
+        if (newUserEmail) {
+            await userModel_1.default.findOneAndUpdate({ _id: userData._id }, { email: newUserEmail });
+        }
+        res.status(statusCodes_1.HttpStatusCode.NO_CONTENT).json();
+    }
+    catch (err) {
+        // MongoDB internal errors (findOneAndUpdate or findOne) or bcrypt comparison, hashing errors
+        next(err);
+        return;
+    }
+};
+exports.updateUser = updateUser;
 //# sourceMappingURL=userController.js.map

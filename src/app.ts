@@ -1,6 +1,7 @@
-import express, { Application, Request, Response, Router } from "express";
+import express, { Application, Response } from "express";
 import cors from "cors";
 import connectToMongoDB from './config/db';
+import { HttpStatusCode } from "./config/statusCodes";
 
 // Import routes
 import userRoutes from './routes/v1/userRoutes';
@@ -10,7 +11,7 @@ const app: Application = express();
 // let isConnectedToMongoDB = false;
 
 //database connection
-connectToMongoDB()
+connectToMongoDB();
 // .then(
 //   (isConnected) => {
 //     isConnectedToMongoDB = isConnected;
@@ -28,8 +29,11 @@ app.use("/api/v1/users", userRoutes);
 // Error handling middleware
 app.use(errorHandler);
 
-app.get('/', (req: Request, res: Response): void => {
-  res.send('API running...');
+app.get('/api', (_, res: Response): void => {
+  res.status(HttpStatusCode.OK).json({
+    info: 'API running...',
+    api: ["/api/v1/users"]
+  });
 });
 
 export default app;

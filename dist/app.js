@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const db_1 = __importDefault(require("./config/db"));
+const statusCodes_1 = require("./config/statusCodes");
 // Import routes
 const userRoutes_1 = __importDefault(require("./routes/v1/userRoutes"));
 const errors_1 = require("./middleware/errors");
@@ -26,8 +27,11 @@ app.use(express_1.default.urlencoded({ extended: false }));
 app.use("/api/v1/users", userRoutes_1.default);
 // Error handling middleware
 app.use(errors_1.errorHandler);
-app.get('/', (req, res) => {
-    res.send('API running...');
+app.get('/api', (_, res) => {
+    res.status(statusCodes_1.HttpStatusCode.OK).json({
+        info: 'API running...',
+        api: ["/api/v1/users"]
+    });
 });
 exports.default = app;
 //# sourceMappingURL=app.js.map
