@@ -1,6 +1,6 @@
-# Backend
+# Backend v0.0.1
 
-Full backend for the app.
+Current api version: **API v1**
 
 Specify TODO in TODO.md
 
@@ -63,3 +63,11 @@ Specify TODO in TODO.md
     npm run build
     npm run dev
    ```
+
+7. Supported features:
+
+- user creation
+- user logging in
+- user authorization with jwt
+- user deletion
+- user updating (password, main, name)
