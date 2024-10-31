@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getUser, createUser, deleteUser, updateUser } from "../../controllers/userController";
-import { validate/*, authenticateToken*/ } from "../../middleware/validate";
+import { validate } from "../../middleware/validate";
 import { CreateUserValidatorSchema, GetUserValidatorSchema, UpdateUserValidatorSchema } from "../../utils/validators/userValidator";
 
 const router: Router = Router();

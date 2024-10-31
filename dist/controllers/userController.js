@@ -43,7 +43,7 @@ const getUser = async (req, res, next) => {
         };
         const secretKey = process.env.ACCESS_TOKEN_SECRET?.toString() || "21793t21v3ks";
         // Create JWT token with user data
-        const accessToken = jsonwebtoken_1.default.sign({ userResponseData }, secretKey);
+        const accessToken = jsonwebtoken_1.default.sign(userResponseData, secretKey);
         res.status(statusCodes_1.HttpStatusCode.OK).json({ accessToken, userResponseData });
     }
     catch (err) {

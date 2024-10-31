@@ -11,6 +11,7 @@ import UserSchema, { IUserSchema } from "../models/userModel"
 import { HttpStatusCode } from '../config/statusCodes';
 // Importing user services for database operations
 import { searchUser } from '../services/userServices';
+import IUserResponseData from '../interfaces/userResponseData';
 
 const SALT_ROUNDS: number = Number(process.env.SALT_ROUNDS) || 10;
 
@@ -18,28 +19,28 @@ const SALT_ROUNDS: number = Number(process.env.SALT_ROUNDS) || 10;
 export const getUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // Casting body as IGetUserValidatorSchema interface and writing data to variables
     // userName or userEmail will be provided
-    const body = req.body as IGetUserValidatorSchema;
-    const userName = body.name;
-    const userEmail = body.email;
-    const userPassword = body.password;
+    const body: IGetUserValidatorSchema = req.body as IGetUserValidatorSchema;
+    const userName: string | undefined = body.name;
+    const userEmail: string | undefined = body.email;
+    const userPassword: string = body.password;
 
     try {
         // Searches user by name or email and returns the user if found
-        const userData = await searchUser(userName, userEmail);
+        const userData: IUserSchema | null = await searchUser(userName, userEmail);
         if (!userData) {
             res.status(HttpStatusCode.NOT_FOUND).send('User not found');
             return;
         }
 
         // Checks if the password is correct
-        const isMatch = await bcrypt.compare(userPassword, userData.password);
+        const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
         if (!isMatch) {
             res.status(HttpStatusCode.UNAUTHORIZED).send('Incorrect password');
             return;
         }
 
         // Creates a new userResponseData with user data that will be sent to the client
-        const userResponseData = {
+        const userResponseData: IUserResponseData = {
             _id: userData._id,
             name: userData.name,
             email: userData.email,
@@ -49,7 +50,7 @@ export const getUser = async (req: Request, res: Response, next: NextFunction): 
         const secretKey: string = process.env.ACCESS_TOKEN_SECRET?.toString() || "21793t21v3ks";
 
         // Create JWT token with user data
-        const accessToken = jst.sign({ userResponseData }, secretKey);
+        const accessToken: string = jst.sign(userResponseData, secretKey);
 
         res.status(HttpStatusCode.OK).json({ accessToken, userResponseData });
     } catch (err) {
@@ -62,10 +63,10 @@ export const getUser = async (req: Request, res: Response, next: NextFunction): 
 // (name and email must not be in the db)
 export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // Casting body as ICreateUserValidatorSchema interface and writing data to variables
-    const body = req.body as ICreateUserValidatorSchema;
-    const userName = body.name;
-    const userEmail = body.email;
-    const userPassword = body.password;
+    const body: ICreateUserValidatorSchema = req.body as ICreateUserValidatorSchema;
+    const userName: string = body.name;
+    const userEmail: string = body.email;
+    const userPassword: string = body.password;
 
     // Searches for user with the same email or name, if found responds to client
     try {
@@ -113,21 +114,21 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 // Removes user with the specified email | name and password if exists
 export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // Casting body as IGetUserValidatorSchema interface and writing data to variables
-    const body = req.body as IGetUserValidatorSchema;
-    const userName = body.name;
-    const userEmail = body.email;
-    const userPassword = body.password;
+    const body: IGetUserValidatorSchema = req.body as IGetUserValidatorSchema;
+    const userName: string | undefined = body.name;
+    const userEmail: string | undefined = body.email;
+    const userPassword: string = body.password;
 
     try {
         // Searching for user in the db with userName or userEmail
-        const userData = await searchUser(userName, userEmail);
+        const userData: IUserSchema | null = await searchUser(userName, userEmail);
         if (!userData) {
             res.status(HttpStatusCode.NOT_FOUND).send('User not found');
             return;
         }
 
         // Checking if the password is correct
-        const isMatch = await bcrypt.compare(userPassword, userData.password);
+        const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
         if (!isMatch) {
             res.status(HttpStatusCode.UNAUTHORIZED).send('Incorrect password');
             return;
@@ -144,25 +145,25 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
 }
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
-    const body = req.body as IUpdateUserValidatorSchema;
-    const userName = body.name;
-    const userEmail = body.email;
-    const userPassword = body.password;
+    const body: IUpdateUserValidatorSchema = req.body as IUpdateUserValidatorSchema;
+    const userName: string | undefined = body.name;
+    const userEmail: string | undefined = body.email;
+    const userPassword: string = body.password;
 
-    const newUserName = body.newName;
-    const newUserPassword = body.newPassword;
-    const newUserEmail = body.newEmail;
+    const newUserName: string | undefined = body.newName;
+    const newUserPassword: string | undefined = body.newPassword;
+    const newUserEmail: string | undefined = body.newEmail;
 
     try {
         // Searching for user in the db with userName or userEmail
-        const userData = await searchUser(userName, userEmail);
+        const userData: IUserSchema | null = await searchUser(userName, userEmail);
         if (!userData) {
             res.status(HttpStatusCode.NOT_FOUND).send('User not found');
             return;
         }
 
         // Checking if the password is correct
-        const isMatch = await bcrypt.compare(userPassword, userData.password);
+        const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
         if (!isMatch) {
             res.status(HttpStatusCode.UNAUTHORIZED).send('Incorrect password');
             return;
@@ -173,7 +174,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             await UserSchema.findOneAndUpdate({ _id: userData._id }, { name: newUserName });
         }
         if (newUserPassword) {
-            const hash = await bcrypt.hash(newUserPassword, SALT_ROUNDS);
+            const hash: string = await bcrypt.hash(newUserPassword, SALT_ROUNDS);
             await UserSchema.findOneAndUpdate({ _id: userData._id }, { password: hash });
         }
         if (newUserEmail) {
