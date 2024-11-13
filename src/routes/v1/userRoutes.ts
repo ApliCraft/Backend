@@ -5,9 +5,9 @@ import { CreateUserValidatorSchema, GetUserValidatorSchema, UpdateUserValidatorS
 
 const router: Router = Router();
 
-router.get("/getUser", validate(GetUserValidatorSchema), getUser);
-router.post("/createUser", validate(CreateUserValidatorSchema), createUser);
-router.delete("/deleteUser", validate(GetUserValidatorSchema), deleteUser);
-router.put("/updateUser", validate(UpdateUserValidatorSchema), updateUser);
+router.get("/", validate(GetUserValidatorSchema), getUser);
+router.post("/", validate(CreateUserValidatorSchema), createUser);
+router.delete("/", validate(GetUserValidatorSchema), deleteUser);
+router.put("/", validate(UpdateUserValidatorSchema), updateUser);
 
 export default router;

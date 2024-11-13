@@ -1,3 +1,8 @@
+dist/*
+dist/
+dist/**/*
+
+
 # NUXT JS IS DISSABLED IN GITIGNORE
 # Logs
 logs
@@ -129,3 +134,5 @@ out
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+dist

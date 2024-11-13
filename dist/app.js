@@ -24,7 +24,7 @@ app.use((0, cors_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: false }));
 // Use the imported routes
-app.use("/api/v1/users", userRoutes_1.default);
+app.use("/api/v1/user", userRoutes_1.default);
 // Error handling middleware
 app.use(errors_1.errorHandler);
 app.get('/api', (_, res) => {
