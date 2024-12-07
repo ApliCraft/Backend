@@ -16,7 +16,7 @@ export const getProduct = async (req: Request, res: Response, next: NextFunction
 
     try {
         const products: IProductSchema[] = await searchProducts(searchTerm);
-        const filteredProducts = products.map(({ _id, __v, ...filteredData }) => filteredData)
+        const filteredProducts = products.map(({ __v, ...filteredData }) => filteredData)
 
         return res.status(HttpStatusCode.OK).send(filteredProducts);
     } catch (err) {

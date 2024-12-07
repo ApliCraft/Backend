@@ -4,27 +4,28 @@ export interface IRecipeSchema {
     _id?: string,
     name: string,
     plName?: string,
-    kcalPortion?: number,
-    proteinPortion?: number,
-    carbohydratesPortion?: number,
-    fatContentPortion?: number,
+    kcalPortion: number,
+    proteinPortion: number,
+    carbohydratesPortion: number,
+    fatContentPortion: number,
     prepareTime?: number,
     difficulty?: number,
     ingredients: IIngredientSchema[],
     category: string,
     excludeDiets: string[],
     allergens: string[],
-    photo: IImageSchema,
+    photo?: IImageSchema,
     author: string,
-    addDate: Date,
+    addDate?: Date,
     privacy: "public" | "private",
     likeQuantity: number,
     saveQuantity: number,
-    uploadQuantity: 911,
+    uploadQuantity: number,
     preDescription: string,
     description: string,
     preparation: string,
     keyWords: string[],
+    __v?: string,
 }
 
 // Ingredient Schema
@@ -147,5 +148,5 @@ const RecipeSchema = new Schema<IRecipeSchema>({
     }
 })
 
-const Recipe = model<IRecipeSchema>('User', RecipeSchema);
+const Recipe = model<IRecipeSchema>('Recipe', RecipeSchema);
 export default Recipe;

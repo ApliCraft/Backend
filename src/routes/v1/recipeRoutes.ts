@@ -1,8 +1,12 @@
 import { Router } from 'express';
-import { getRecipes } from '../../controllers/recipeController';
+import { getRecipe, addRecipe } from '../../controllers/recipeController';
+import { validate } from '../../middleware/validate';
+
+import { AddRecipeValidatorSchema } from '../../utils/validators/recipeValidator';
 
 const router: Router = Router();
 
-router.get("/", getRecipes);
+router.get("/", getRecipe);
+router.post("/", validate(AddRecipeValidatorSchema), addRecipe)
 
 export default router;
