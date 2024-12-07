@@ -5,6 +5,8 @@ import { HttpStatusCode } from "./config/statusCodes";
 
 // Import routes
 import userRoutes from './routes/v1/userRoutes';
+import recipeRoutes from './routes/v1/recipeRoutes';
+import productRoutes from './routes/v1/productRoutes';
 import { errorHandler } from './middleware/errors';
 
 const app: Application = express();
@@ -25,6 +27,8 @@ app.use(express.urlencoded({ extended: false }));
 
 // Use the imported routes
 app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/recipe", recipeRoutes)
+app.use("/api/v1/product", productRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

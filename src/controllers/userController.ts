@@ -40,8 +40,7 @@ export const getUser = async (req: Request, res: Response, next: NextFunction): 
         }
 
         // Creates a new userResponseData with user data that will be sent to the client
-        const userResponseData: IUserResponseData = {
-            _id: userData._id,
+        const userResponseData: IUserResponseData = { 
             name: userData.name,
             email: userData.email,
             signInDate: userData.signInDate,

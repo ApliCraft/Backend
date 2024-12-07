@@ -11,7 +11,7 @@ export const validate = (schema: ZodSchema): (req: Request, res: Response, next:
         try {
             schema.parse(req.body);
             next();
-        } catch (error) {
+        } catch (error: unknown) {
             res.status(HttpStatusCode.BAD_REQUEST).json({ message: error });
         }
     }
