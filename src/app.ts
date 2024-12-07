@@ -36,7 +36,7 @@ app.use(errorHandler);
 app.get('/api', (_, res: Response): void => {
   res.status(HttpStatusCode.OK).json({
     info: 'API running...',
-    api: ["/api/v1/users"]
+    api: ["/api/v1/users", "/api/v1/recipe", "/api/v1/product"]
   });
 });
 
