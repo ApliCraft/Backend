@@ -28,19 +28,19 @@ export const getUser = async (req: Request, res: Response, next: NextFunction): 
         // Searches user by name or email and returns the user if found
         const userData: IUserSchema | null = await searchUser(userName, userEmail);
         if (!userData) {
-            res.status(HttpStatusCode.NOT_FOUND).send('User not found');
+            res.status(HttpStatusCode.NOT_FOUND).json('User not found');
             return;
         }
 
         // Checks if the password is correct
         const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
         if (!isMatch) {
-            res.status(HttpStatusCode.UNAUTHORIZED).send('Incorrect password');
+            res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
             return;
         }
 
         // Creates a new userResponseData with user data that will be sent to the client
-        const userResponseData: IUserResponseData = { 
+        const userResponseData: IUserResponseData = {
             name: userData.name,
             email: userData.email,
             signInDate: userData.signInDate,
@@ -101,7 +101,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     // Saving user to mongoDB database
     try {
         await user.save();
-        res.status(HttpStatusCode.OK).send(`User with name: ${userName} and email: ${userEmail} created successfully.`);
+        res.status(HttpStatusCode.OK).json(`User with name: ${userName} and email: ${userEmail} created successfully.`);
     }
     catch (err) {
         // MongoDB internal errors
@@ -122,14 +122,14 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
         // Searching for user in the db with userName or userEmail
         const userData: IUserSchema | null = await searchUser(userName, userEmail);
         if (!userData) {
-            res.status(HttpStatusCode.NOT_FOUND).send('User not found');
+            res.status(HttpStatusCode.NOT_FOUND).json('User not found');
             return;
         }
 
         // Checking if the password is correct
         const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
         if (!isMatch) {
-            res.status(HttpStatusCode.UNAUTHORIZED).send('Incorrect password');
+            res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
             return;
         }
 
@@ -157,14 +157,14 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
         // Searching for user in the db with userName or userEmail
         const userData: IUserSchema | null = await searchUser(userName, userEmail);
         if (!userData) {
-            res.status(HttpStatusCode.NOT_FOUND).send('User not found');
+            res.status(HttpStatusCode.NOT_FOUND).json('User not found');
             return;
         }
 
         // Checking if the password is correct
         const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
         if (!isMatch) {
-            res.status(HttpStatusCode.UNAUTHORIZED).send('Incorrect password');
+            res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
             return;
         }
 

@@ -18,6 +18,7 @@ export const AddRecipeValidatorSchema = z.object({
     description: z.string(),
     preparation: z.string(),
     keyWords: z.array(z.string()),
+    base64Image: z.string().optional(),
 });
 
 export type IAddRecipeValidatorSchema = z.infer<typeof AddRecipeValidatorSchema>;

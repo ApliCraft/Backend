@@ -18,14 +18,10 @@ const UserSchema = new Schema<IUserSchema>({
     name: {
         type: String,
         required: true,
-        unique: true,
-        minlength: 3,
-        maxlength: 30,
     },
     email: {
         type: String,
         required: true,
-        unique: true,
     },
     password: {
         type: String,

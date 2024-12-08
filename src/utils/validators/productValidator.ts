@@ -9,8 +9,8 @@ export const AddProductValidatorSchema = z.object({
     fatContentPortion: z.number(),
     excludedDiets: z.array(z.string()).optional(),
     allergens: z.array(z.string()).optional(),
-    class: z.string(),
-    addDate: z.date().optional(),
+    classType: z.string(),
+    base64Image: z.string().optional()
 });
 
 export type IAddProductValidatorSchema = z.infer<typeof AddProductValidatorSchema>;

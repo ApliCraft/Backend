@@ -1,37 +1,10 @@
 import { Request, Response, NextFunction } from "express"
+import fs from 'fs/promises';
 
 import RecipeSchema, { IRecipeSchema } from "../models/recipeModel";
 import { searchRecipes } from "../services/recipeServices";
 import { HttpStatusCode } from "../config/statusCodes";
 import { IAddRecipeValidatorSchema } from "../utils/validators/recipeValidator";
-
-// // const recipe = new RecipeSchema<IRecipeSchema>({
-//     name: "Fruit salad",
-//     plName: "Sałatka owocowa",
-
-//     "kcalPortion": 120,
-//     proteinPortion: 1.2,
-//     carbohydratesPortion: 0.5,
-//     fatContentPortion: 0.3,
-//     prepareTime: 10,
-//     difficulty: 2,
-//     ingredients: [
-//         { productId: "6754cad3dcb44cc2ef70e47e", quantity: 150 }
-//     ],
-//     category: "Śniadanie",
-//     excludeDiets: ["Gluten"],
-//     allergens: [],
-//     photo: { fileName: "sdfg", filePath: "dfg" },
-//     author: "admin",
-//     privacy: "public",
-//     likeQuantity: 5,
-//     saveQuantity: 0,
-//     uploadQuantity: 0,
-//     preDescription: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-//     description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//     preparation: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//     keyWords: ["owoce", "sałatka"]
-// });
 
 export const getRecipe = async (req: Request, res: Response, next: NextFunction) => {
     let searchTerm: string = "";
@@ -41,8 +14,30 @@ export const getRecipe = async (req: Request, res: Response, next: NextFunction)
     }
 
     try {
-        const recipes: IRecipeSchema[] = await searchRecipes(searchTerm);
-        const filteredRecipes = recipes.map(({ _id, __v, ...filteredData }) => filteredData);
+        const recipes: (IRecipeSchema & { base64Image?: string })[] = await searchRecipes(searchTerm);
+        let filteredRecipes = recipes.map(({ _id, __v, ...filteredData }) => filteredData);
+
+        if (searchTerm !== "") {
+            filteredRecipes = await Promise.all(filteredRecipes.map(async (recipe: IRecipeSchema & { base64Image?: string }): Promise<IRecipeSchema & { base64Image?: string }> => {
+                if (recipe.photo) {
+                    const imagePath = recipe.photo.filePath;
+
+                    try {
+                        await fs.access(imagePath);
+
+                        const imageBuffer = await fs.readFile(imagePath);
+                        const base64Image = imageBuffer.toString('base64');
+                        recipe.base64Image = base64Image;
+                    } catch (err) {
+                        // err if image does not exist
+                        console.log(err);
+                    }
+                }
+
+                return recipe;
+            }));
+        }
+
         res.status(HttpStatusCode.OK).send(filteredRecipes);
 
         return;
@@ -52,7 +47,12 @@ export const getRecipe = async (req: Request, res: Response, next: NextFunction)
 }
 
 export const addRecipe = async (req: Request, res: Response, next: NextFunction) => {
-    const body = req.body as IAddRecipeValidatorSchema;
+    const body = req.body as IAddRecipeValidatorSchema & {
+        photo: {
+            fileName: string,
+            filePath: string,
+        }
+    };
     const searchTerm = body.name;
 
     try {
@@ -70,10 +70,29 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
         return;
     }
 
-    const { privacy, ...filteredBody } = body;
+    const { privacy, base64Image, ...filteredBody } = body;
+
+    if (base64Image) {
+        try {
+            const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
+            const buffer = Buffer.from(base64Data, 'base64');
+            const fileName = `${body.name}-${Date.now()}.png`;
+            const filePath = `uploads/images/${fileName}`;
+
+            await fs.writeFile(filePath, buffer);
+            filteredBody.photo = {
+                fileName,
+                filePath,
+            }
+        } catch (err) {
+            console.error(err);
+            res.status(HttpStatusCode.INTERNAL_SERVER).send("Error while saving image.");
+            return;
+        };
+    }
 
     const recipe = new RecipeSchema<IRecipeSchema>({
-        ...body,
+        ...filteredBody,
         privacy,
         kcalPortion: 1,
         proteinPortion: 1,

@@ -13,3 +13,20 @@ export async function searchProducts(searchTerm: string | null = null): Promise<
 
     return products;
 }
+
+
+export async function searchProductsPl(searchTerm: string | null = null): Promise<IProductSchema[]> {
+    let products: IProductSchema[] = [];
+
+    if (searchTerm) {
+        products = await ProductSchema.find({ plName: { $regex: new RegExp(searchTerm, "i") } }).lean();
+    } else {
+        products = await ProductSchema.find().lean();
+    }
+
+    return products;
+}
+
+export async function deleteProduct(id: string) {
+    return await ProductSchema.findByIdAndDelete(id);
+}

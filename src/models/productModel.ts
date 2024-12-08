@@ -13,7 +13,24 @@ export interface IProductSchema {
     class: string,
     addDate?: Date,
     __v?: number,
+    photo?: IImageSchema,
 }
+
+export interface IImageSchema {
+    fileName: string,
+    filePath: string,
+}
+
+const ImageSchema = new Schema<IImageSchema>({
+    fileName: {
+        type: String,
+        required: true,
+    },
+    filePath: {
+        type: String,
+        required: true,
+    }
+})
 
 const ProductSchema = new Schema<IProductSchema>({
     _id: {
@@ -28,6 +45,7 @@ const ProductSchema = new Schema<IProductSchema>({
     plName: {
         type: String,
         unique: true,
+        sparse: true
     },
     kcalPortion: {
         type: Number,
@@ -45,13 +63,16 @@ const ProductSchema = new Schema<IProductSchema>({
         type: Number,
         required: true,
     },
+    photo: {
+        type: ImageSchema
+    },
     excludedDiets: {
         type: [String],
-        default: [],
+        required: true,
     },
     allergens: {
         type: [String],
-        default: [],
+        required: true,
     },
     class: {
         type: String,

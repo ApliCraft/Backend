@@ -7,6 +7,11 @@ let MONGO_URI: string = process.env.MONGO_URI || "mongodb://localhost:27017/Apli
 if (MONGO_URI.indexOf(":27015") != -1) {
     MONGO_URI = "mongodb://localhost:27017";
 }
+if (process.env.isTesting == "true") {
+    const date = new Date();
+    MONGO_URI = `mongodb://localhost:27017/ApliCraft-test-${date.getTime()}`;
+    console.log("BACKEND IN TESTING MODE.");
+}
 
 console.log(`MONGO_URI: ${MONGO_URI}`);
 
