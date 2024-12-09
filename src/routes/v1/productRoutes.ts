@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProducts, addProduct, deleteProduct, filterProducts } from '../../controllers/productController';
+import { getProducts, addProduct, deleteProduct, filterProducts, getRecipesByProductIds } from '../../controllers/productController';
 import { validate } from '../../middleware/validate';
 import { AddProductValidatorSchema } from '../../utils/validators/productValidator';
 import { searchProductById } from '../../services/productServices';
@@ -8,6 +8,8 @@ import { ProductType } from '../../models/productModel';
 import { handleImagesRead } from '../../helpers/handleImagesRead';
 
 const router: Router = Router();
+
+router.get("/:id/recipes", getRecipesByProductIds);
 
 router.get("/:id", async (req, res, next) => {
     const { id } = req.params;

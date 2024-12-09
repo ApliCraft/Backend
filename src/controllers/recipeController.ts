@@ -3,23 +3,17 @@ import fs from 'fs/promises';
 
 import RecipeSchema, { ImageType, RecipeType } from "../models/recipeModel";
 import { searchRecipes, searchRecipesPl } from "../services/recipeServices";
-import { HttpStatusCode } from "../config/statusCodes";
 import { IAddRecipeValidatorSchema } from "../utils/validators/recipeValidator";
-import { responseObject } from "../config/defaultResponse";
 import { searchProductById } from "../services/productServices";
 import { Types } from "mongoose";
 
 export const getRecipe = async (req: Request, res: Response, next: NextFunction) => {
-    let searchTerm: string = "";
-
-    if (req.body.name) {
-        searchTerm = req.body.name;
-    }
+    const { searchTerm, sendImages } = req.body;
 
     try {
         let recipes: (RecipeType & { base64Image?: string })[] = await searchRecipes(searchTerm);
 
-        if (searchTerm !== "") {
+        if (sendImages) {
             recipes = await Promise.all(recipes.map(async (recipe: RecipeType & { base64Image?: string }): Promise<RecipeType & { base64Image?: string }> => {
                 if (recipe.photo) {
                     const imagePath = recipe.photo.filePath;
@@ -39,7 +33,7 @@ export const getRecipe = async (req: Request, res: Response, next: NextFunction)
             }));
         }
 
-        res.status(HttpStatusCode.OK).json(recipes);
+        res.status(200).json(recipes);
 
         return;
     } catch (err) {
@@ -56,8 +50,7 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
     let excludedDiets: string[] = [];
     let allergens: string[] = [];
 
-    const productErrors: string[] = [];
-
+    // checks if user specified correct ingredient productId
     ingredients.forEach((ingredient) => {
         if (!Types.ObjectId.isValid(ingredient.productId)) {
             res.status(400).json('Invalid MongoDB ObjectId');
@@ -70,8 +63,7 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
         const recipes: RecipeType[] = await searchRecipes(name);
         if (recipes.length > 0) {
 
-            const response = responseObject("CONFLICT", `Recipe with name ${name} already exists.`, {});
-            res.status(HttpStatusCode.CONFLICT).json(response);
+            res.status(409).json(`Recipe with name ${name} already exists.`);
             return
         }
     } catch (err) {
@@ -96,18 +88,18 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
 
     // checking privacy value
     if (privacy !== "public" && privacy !== "private") {
-        const response = responseObject("BAD_REQUEST", `Privacy must be public or private.`, {});
-        res.status(HttpStatusCode.BAD_REQUEST).json(response);
+        res.status(400).json(`Privacy must be public or private.`);
         return
     }
 
-    // calculate based on ingredients
+    // check if ingredients are empty
     if (ingredients.length == 0) {
-        const response = responseObject("BAD_REQUEST", `Ingredients array cannot be empty.`, {});
-        res.status(HttpStatusCode.BAD_REQUEST).json(response);
+        res.status(400).json(`Ingredients array cannot be empty.`);
         return;
     }
 
+    // checking if ingredients exist
+    const productErrors: string[] = [];
     await Promise.all(ingredients.map(async (ingredient) => {
         const product = await searchProductById(ingredient.productId);
 
@@ -125,8 +117,7 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
     }));
 
     if (productErrors.length > 0) {
-        const response = responseObject("BAD_REQUEST", "Some ingredients don't exist.", { productErrors });
-        res.status(HttpStatusCode.BAD_REQUEST).json(response);
+        res.status(404).json(productErrors);
         return;
     }
 
@@ -144,10 +135,7 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
                 filePath,
             }
         } catch (err) {
-            console.error(err);
-
-            const response = responseObject("INTERNAL_SERVER", `Error while saving image.`, {});
-            res.status(HttpStatusCode.INTERNAL_SERVER).json(response);
+            next(err);
             return;
         };
     }
@@ -179,8 +167,7 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
     try {
         await newRecipe.save();
 
-        const response = responseObject("CREATED", `Recipe with name ${name} created successfully.`, {});
-        res.status(HttpStatusCode.CREATED).json(response);
+        res.status(201).json(`Recipe with name ${name} created successfully.`);
         return;
     } catch (err) {
         return next(err);
