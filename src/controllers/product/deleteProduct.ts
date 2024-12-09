@@ -1,15 +1,18 @@
 import { Request, Response, NextFunction } from "express";
-import { responseObject } from "../../config/defaultResponse";
-import { HttpStatusCode } from "../../config/statusCodes";
 import { deleteProduct } from "../../services/productServices";
+import { Types } from "mongoose";
 
 
-export const deleteProductFunction = async (req: Request, res: Response, next: NextFunction) => {
+export const deleteOneProductFunction = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.body;
 
     if (!id) {
-        const response = responseObject("BAD_REQUEST", "Missing product id to remove.", {});
-        res.status(HttpStatusCode.BAD_REQUEST).json(response);
+        res.status(400).json(`Missing product id to remove.`);
+        return;
+    }
+
+    if (!Types.ObjectId.isValid(id)) {
+        res.status(400).json('Invalid MongoDB ObjectId');
         return;
     }
 
@@ -17,13 +20,11 @@ export const deleteProductFunction = async (req: Request, res: Response, next: N
         const result = await deleteProduct(id);
 
         if (!result) {
-            const response = responseObject("BAD_REQUEST", "Specified element not found.", {});
-            res.status(HttpStatusCode.BAD_REQUEST).json(response);
+            res.status(404).json(`Product with id ${id} not found.`);
             return;
         }
 
-        const response = responseObject("OK", "Removed specified element.", {});
-        res.status(HttpStatusCode.OK).json(response);
+        res.status(204).json(`Product with id ${id} deleted`);
         return;
     } catch (err) {
         return next(err);

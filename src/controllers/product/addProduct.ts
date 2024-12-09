@@ -2,22 +2,19 @@ import { Request, Response, NextFunction } from "express";
 import fs from 'fs/promises';
 
 import { IAddProductValidatorSchema } from "../../utils/validators/productValidator";
-import ProductSchema, { IProductSchema } from "../../models/productModel";
-import { searchProducts, searchProductsPl } from "../../services/productServices";
-import { HttpStatusCode } from "../../config/statusCodes";
+import ProductSchema, { ProductType } from "../../models/productModel";
+import { searchProducts, filterProducts } from "../../services/productServices";
 import { IImageSchema } from "../../models/recipeModel";
-import { responseObject } from "../../config/defaultResponse";
 
 export const addProductFunction = async (req: Request, res: Response, next: NextFunction) => {
     const { name, plName, kcalPortion, proteinPortion, carbohydratesPortion, fatContentPortion, classType, excludedDiets, allergens, base64Image } = req.body as IAddProductValidatorSchema;
 
     // name must be unique, this code ensures that it is unique
     try {
-        const products: IProductSchema[] = await searchProducts(name);
+        const products: ProductType[] = await searchProducts(name, true);
         if (products.length > 0) {
 
-            const response = responseObject("CONFLICT", `Product with name ${name} already exists.`, {});
-            res.status(HttpStatusCode.CONFLICT).json(response);
+            res.status(409).json(`Product with name: ${name} already exists.`);
             return
         }
     } catch (err) {
@@ -28,11 +25,10 @@ export const addProductFunction = async (req: Request, res: Response, next: Next
     // plName must be unique, this code ensures that it is unique
     if (plName) {
         try {
-            const products: IProductSchema[] = await searchProductsPl(plName);
+            const products: ProductType[] = await filterProducts({ plName });
             if (products.length > 0) {
 
-                const response = responseObject("CONFLICT", `Product with plName ${plName} already exists.`, {});
-                res.status(HttpStatusCode.CONFLICT).json(response);
+                res.status(409).json(`Product with plName: ${plName} already exists.`);
                 return
             }
         } catch (err) {
@@ -57,13 +53,12 @@ export const addProductFunction = async (req: Request, res: Response, next: Next
         } catch (err) {
             console.error(err);
 
-            const response = responseObject("INTERNAL_SERVER", `Error while saving image.`, {});
-            res.status(HttpStatusCode.INTERNAL_SERVER).json(response);
+            res.status(500).json("Error while saving image.");
             return;
         };
     }
 
-    const newProduct = new ProductSchema<IProductSchema>({
+    const newProduct = new ProductSchema<ProductType>({
         photo,
         name,
         plName,
@@ -74,13 +69,13 @@ export const addProductFunction = async (req: Request, res: Response, next: Next
         class: classType,
         excludedDiets: (excludedDiets || []),
         allergens: (allergens || []),
+        addDate: new Date()
     });
 
     try {
         await newProduct.save();
 
-        const response = responseObject("CREATED", `Product with name ${name} created successfully.`, {});
-        res.status(HttpStatusCode.CREATED).json(response);
+        res.status(201).json(`Product with name ${name} was successfully saved.`);
         return;
     } catch (err) {
         return next(err);

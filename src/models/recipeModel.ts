@@ -1,57 +1,7 @@
-import { Schema, model, Types } from 'mongoose';
-
-export interface IRecipeSchema {
-    _id?: string,
-    name: string,
-    plName?: string,
-    kcalPortion: number,
-    proteinPortion: number,
-    carbohydratesPortion: number,
-    fatContentPortion: number,
-    prepareTime?: number,
-    difficulty?: number,
-    ingredients: IIngredientSchema[],
-    category: string,
-    excludeDiets: string[],
-    allergens: string[],
-    photo?: IImageSchema,
-    author: string,
-    addDate?: Date,
-    privacy: "public" | "private",
-    likeQuantity: number,
-    saveQuantity: number,
-    uploadQuantity: number,
-    preDescription: string,
-    description: string,
-    preparation: string,
-    keyWords: string[],
-    __v?: string,
-}
-
-// Ingredient Schema
-export interface IIngredientSchema {
-    productId?: string
-    quantity: number,
-}
-
-const IngredientSchema = new Schema<IIngredientSchema>({
-    productId: {
-        type: Types.ObjectId,
-        required: true,
-    },
-    quantity: {
-        type: Number,
-        required: true
-    },
-});
+import { Schema, model, Types, InferSchemaType } from 'mongoose';
 
 // Image Schema
-export interface IImageSchema {
-    fileName: string,
-    filePath: string,
-}
-
-const ImageSchema = new Schema<IImageSchema>({
+const ImageSchema = new Schema({
     fileName: {
         type: String,
         required: true,
@@ -62,77 +12,91 @@ const ImageSchema = new Schema<IImageSchema>({
     }
 })
 
-const RecipeSchema = new Schema<IRecipeSchema>({
+export type ImageType = InferSchemaType<typeof ImageSchema>;
+
+// Recipe Schema
+const RecipeSchema = new Schema({
     _id: {
         type: Types.ObjectId,
         auto: true,
     },
     name: {
         type: String,
+        unique: true,
         required: true,
     },
     plName: {
-        type: String
+        type: String,
+        unique: true,
+        sparse: true
     },
     kcalPortion: {
         type: Number,
-    },
-    proteinPortion: {
-        type: Number,
-    },
-    carbohydratesPortion: {
-        type: Number,
-    },
-    fatContentPortion: {
-        type: Number,
-    },
-    prepareTime: {
-        type: Number,
-    },
-    difficulty: {
-        type: Number,
-    },
-    ingredients: {
-        type: [IngredientSchema],
-        default: [],
         required: true,
     },
-    category: {
-        type: String,
+    proteinPortion: {
+        type: Number, required: true,
     },
-    excludeDiets: {
+    carbohydratesPortion: {
+        type: Number, required: true,
+    },
+    fatContentPortion: {
+        type: Number, required: true,
+    },
+    prepareTime: {
+        type: Number, required: true,
+    },
+    difficulty: {
+        type: Number, required: true,
+    },
+    ingredients: [{
+        productId: {
+            type: String,
+            ref: "Product",
+            required: true
+        },
+        quantity: {
+            type: Number,
+            required: true
+        }
+    }],
+    category: {
+        type: String, required: true,
+    },
+    excludedDiets: {
         type: [String],
-        default: [],
+        required: true,
     },
     allergens: {
         type: [String],
-        default: [],
+        required: true,
     },
     photo: {
         type: ImageSchema
     },
     author: {
-        type: String
+        type: String, required: true,
     },
     addDate: {
         type: Date,
         default: Date.now,
+        required: false,
     },
     privacy: {
         type: String,
         enum: ['public', 'private'],
-        default: 'public',
+        required: true,
     },
     likeQuantity: {
         type: Number,
-        default: 0,
+        required: true,
     },
     saveQuantity: {
         type: Number,
-        default: 0,
+        required: true,
     },
     preDescription: {
-        type: String,
+        type: String, required: true,
     },
     description: {
         type: String,
@@ -144,9 +108,10 @@ const RecipeSchema = new Schema<IRecipeSchema>({
     },
     keyWords: {
         type: [String],
-        default: [],
+        required: true,
     }
-})
+});
 
-const Recipe = model<IRecipeSchema>('Recipe', RecipeSchema);
+export type RecipeType = InferSchemaType<typeof RecipeSchema>;
+const Recipe = model<RecipeType>('Recipe', RecipeSchema);
 export default Recipe;

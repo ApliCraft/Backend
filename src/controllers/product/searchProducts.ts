@@ -1,25 +1,20 @@
 import { Request, Response, NextFunction } from "express";
 import fs from 'fs/promises';
-import { IProductSchema } from "../../models/productModel";
 import { searchProducts } from "../../services/productServices";
-import { responseObject } from "../../config/defaultResponse";
-import { HttpStatusCode } from "../../config/statusCodes";
+import { ProductType } from "../../models/productModel";
 
-export const getProductFunction = async (req: Request, res: Response, next: NextFunction) => {
-    let searchTerm: string = "";
-    let sendImages: boolean = false;
-    if (req.body.name) {
-        searchTerm = req.body.name;
-    }
+export const searchProductsFunction = async (req: Request, res: Response, next: NextFunction) => {
+    const { sendImages, searchTerm }: { sendImages: boolean, searchTerm: string | undefined } = req.body;
 
-    if (req.body.sendImages === true) {
-        sendImages = true;
+    if (!searchTerm) {
+        res.status(400).json("No search term specified");
+        return;
     }
 
     try {
-        let products: (IProductSchema & { base64Image?: string })[] = await searchProducts(searchTerm);
+        let products: (ProductType & { base64Image?: string })[] = await searchProducts(searchTerm);
 
-        if (searchTerm || sendImages) {
+        if (sendImages) {
             products = await Promise.all(products.map(async (product) => {
                 if (product.photo) {
                     const imagePath = product.photo.filePath;
@@ -30,6 +25,7 @@ export const getProductFunction = async (req: Request, res: Response, next: Next
                         const imageBuffer = await fs.readFile(imagePath);
                         const base64Image = imageBuffer.toString('base64');
                         product.base64Image = base64Image;
+                        console.log(product.base64Image);
                     } catch (err) {
                         console.log(err);
                     }
@@ -39,9 +35,7 @@ export const getProductFunction = async (req: Request, res: Response, next: Next
             }));
         }
 
-
-        const response = responseObject("OK", "Sending products data", { products });
-        res.status(HttpStatusCode.OK).json(response);
+        res.status(200).json(products);
         return
 
     } catch (err) {

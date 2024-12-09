@@ -1,27 +1,6 @@
-import { model, Schema, Types } from "mongoose";
+import { InferSchemaType, model, Schema, Types } from "mongoose";
 
-export interface IProductSchema {
-    _id?: string,
-    name: string,
-    plName?: string,
-    kcalPortion: number,
-    proteinPortion: number,
-    carbohydratesPortion: number,
-    fatContentPortion: number,
-    excludedDiets: string[],
-    allergens: string[],
-    class: string,
-    addDate?: Date,
-    __v?: number,
-    photo?: IImageSchema,
-}
-
-export interface IImageSchema {
-    fileName: string,
-    filePath: string,
-}
-
-const ImageSchema = new Schema<IImageSchema>({
+const ImageSchema = new Schema({
     fileName: {
         type: String,
         required: true,
@@ -32,7 +11,9 @@ const ImageSchema = new Schema<IImageSchema>({
     }
 })
 
-const ProductSchema = new Schema<IProductSchema>({
+export type ImageType = InferSchemaType<typeof ImageSchema>;
+
+const ProductSchema = new Schema({
     _id: {
         type: Types.ObjectId,
         auto: true,
@@ -84,5 +65,7 @@ const ProductSchema = new Schema<IProductSchema>({
     }
 });
 
-const Product = model<IProductSchema>('Product', ProductSchema);
+
+export type ProductType = InferSchemaType<typeof ProductSchema>;
+const Product = model<ProductType>('Product', ProductSchema);
 export default Product;

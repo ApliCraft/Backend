@@ -1,7 +1,11 @@
 import { addProductFunction } from "./product/addProduct";
-import { getProductFunction } from "./product/getProduct";
-import { deleteProductFunction } from "./product/deleteProduct";
+import { getProductsFunction } from "./product/getProducts";
+import { deleteOneProductFunction } from "./product/deleteProduct";
+// import { searchProductsFunction } from "./product/searchProducts";
+import { filterProductsFunction } from "./product/filterProducts";
 
-export const getProduct = getProductFunction;
+export const getProducts = getProductsFunction;
 export const addProduct = addProductFunction;
-export const deleteProduct = deleteProductFunction;
+export const deleteProduct = deleteOneProductFunction;
+// export const searchProducts = searchProductsFunction;
+export const filterProducts = filterProductsFunction;
