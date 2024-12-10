@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import { IAddProductValidatorSchema } from "../../utils/validators/productValidator";
 import ProductSchema, { ProductType } from "../../models/productModel";
 import { searchProducts, filterProducts } from "../../services/productServices";
-import { IImageSchema } from "../../models/recipeModel";
+import { ImageType } from "../../models/productModel";
 
 export const addProductFunction = async (req: Request, res: Response, next: NextFunction) => {
     const { name, plName, kcalPortion, proteinPortion, carbohydratesPortion, fatContentPortion, classType, excludedDiets, allergens, base64Image } = req.body as IAddProductValidatorSchema;
@@ -37,7 +37,7 @@ export const addProductFunction = async (req: Request, res: Response, next: Next
         }
     }
 
-    let photo: IImageSchema | undefined;
+    let photo: ImageType | undefined;
     if (base64Image) {
         try {
             const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');

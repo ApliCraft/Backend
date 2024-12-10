@@ -1,189 +1,251 @@
 // Importing express and hashing libraries
 import { Request, Response, NextFunction } from 'express';
-import jst from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
-// Importing user validator schemas for validating requests 
-import { IGetUserValidatorSchema, ICreateUserValidatorSchema, IUpdateUserValidatorSchema } from '../utils/validators/userValidator';
-//Importing user model and interface for mongoose validation
-import UserSchema, { IUserSchema } from "../models/userModel"
-// Importing HTTP status codes for response status codes
-import { HttpStatusCode } from '../config/statusCodes';
-// Importing user services for database operations
+import { IGetUserValidatorSchema, ICreateUserValidatorSchema } from '../utils/validators/userValidator';
+import UserSchema, { UserType } from "../models/userModel"
 import { searchUser } from '../services/userServices';
-import IUserResponseData from '../interfaces/userResponseData';
+import { generateAccessToken, generateRefreshToken, verifyAccessToken, verifyRefreshToken } from '../utils/jwt';
+import User from '../models/userModel';
 
 const SALT_ROUNDS: number = Number(process.env.SALT_ROUNDS) || 10;
 
-// Function used to get user data from the database with email | name and password
-export const getUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Casting body as IGetUserValidatorSchema interface and writing data to variables
-    // userName or userEmail will be provided
-    const body: IGetUserValidatorSchema = req.body as IGetUserValidatorSchema;
-    const userName: string | undefined = body.name;
-    const userEmail: string | undefined = body.email;
-    const userPassword: string = body.password;
+export const checkToken = async (req: Request, res: Response, next: NextFunction) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        res.status(400).json('No token provided');
+        return;
+    }
 
     try {
-        // Searches user by name or email and returns the user if found
-        const userData: IUserSchema | null = await searchUser(userName, userEmail);
-        if (!userData) {
-            res.status(HttpStatusCode.NOT_FOUND).json('User not found');
+        const decoded = verifyAccessToken(token);
+        if (!decoded) {
+            res.status(401).json('Invalid token.');
             return;
         }
 
-        // Checks if the password is correct
-        const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
-        if (!isMatch) {
-            res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
+        res.status(200).json("Token is valid.")
+    } catch (err) {
+        next(err);
+        return;
+    }
+};
+
+export const checkTokenStrict = async (req: Request, res: Response, next: NextFunction) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        res.status(400).json('No token provided');
+        return;
+    }
+
+    try {
+        const decoded = verifyAccessToken(token);
+        if (!decoded) {
+            res.status(401).json('Invalid token.');
             return;
         }
 
-        // Creates a new userResponseData with user data that will be sent to the client
-        const userResponseData: IUserResponseData = {
-            name: userData.name,
-            email: userData.email,
-            signInDate: userData.signInDate,
-        };
+        const user = await User.findById(decoded.sub);
 
-        const secretKey: string = process.env.ACCESS_TOKEN_SECRET?.toString() || "21793t21v3ks";
+        if (!user) {
+            res.status(404).json('User not found for this token.');
+            return;
+        }
 
-        // Create JWT token with user data
-        const accessToken: string = jst.sign(userResponseData, secretKey);
+        if (user.jwtToken !== token) {
+            res.status(403).send('Token is invalid.');
+            return;
+        }
 
-        res.status(HttpStatusCode.OK).json({ accessToken, userResponseData });
+        res.status(200).json("Token is valid.")
+    } catch (err) {
+        next(err);
+        return;
+    }
+};
+
+export const refreshAccessToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+        res.status(400).json("No refresh token provided.");
+        return
+    }
+
+
+    try {
+        const decoded = verifyRefreshToken(refreshToken);
+        if (!decoded) {
+            res.status(401).json('Invalid refresh token.');
+            return;
+        }
+        const user = await User.findById(decoded.sub);
+
+        if (!user) {
+            res.status(404).json('User not found for this token.');
+            return;
+        }
+
+        if (user.refreshToken !== refreshToken) {
+            res.status(403).send('Token is invalid.');
+            return;
+        }
+
+        const accessToken = generateAccessToken(user._id as string, user.roles);
+        const newRefreshToken = generateRefreshToken(user._id as string);
+        user.jwtToken = accessToken;
+        user.refreshToken = newRefreshToken;
+
+        await user.save();
+        res.status(200).json({ accessToken, newRefreshToken });
+        return;
     } catch (err) {
         next(err);
         return;
     }
 }
 
-// Creates a new user with the specified data email, name and password if the user does not exist 
-// (name and email must not be in the db)
-export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Casting body as ICreateUserValidatorSchema interface and writing data to variables
-    const body: ICreateUserValidatorSchema = req.body as ICreateUserValidatorSchema;
-    const userName: string = body.name;
-    const userEmail: string = body.email;
-    const userPassword: string = body.password;
+export const loginUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { email, password } = req.body as IGetUserValidatorSchema;
 
-    // Searches for user with the same email or name, if found responds to client
     try {
-        if (await searchUser(userName, userEmail)) {
-            res.status(HttpStatusCode.CONFLICT).json({ message: 'User already exists' });
+        const user: UserType | null = await searchUser(email);
+        if (!user) {
+            res.status(404).json('User not found');
+            return;
+        }
+
+        const isMatch: boolean = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            res.status(401).json('Incorrect password');
+            return;
+        }
+
+        const accessToken = generateAccessToken(user._id as string, user.roles);
+        const refreshToken = generateRefreshToken(user._id as string);
+
+        user.refreshToken = refreshToken;
+        user.jwtToken = accessToken;
+
+        await user.save();
+
+        res.status(200).json({ accessToken, refreshToken });
+    } catch (err) {
+        next(err);
+        return;
+    }
+}
+
+
+export const createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { username, email, password } = req.body as ICreateUserValidatorSchema;
+
+    try {
+        if (await searchUser(email, username)) {
+            res.status(409).json("User already exists.");
             return;
         }
     } catch (err) {
-        // Mongodb internal errors
         next(err);
         return;
     }
 
-    // The hashing for the password
-    let hash: string;
+    let passwordHash: string;
     try {
-        hash = await bcrypt.hash(userPassword, SALT_ROUNDS);
+        passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     } catch (err) {
-        // Hashing password errors
         next(err);
         return;
     }
 
-    // Creates new user with hashed password 
-    const user = new UserSchema<IUserSchema>({
-        name: userName,
-        email: userEmail,
-        password: hash,
-        isActive: false,
-        lastLoginDate: new Date(),
+    const user = new UserSchema({
+        username,
+        email,
+        password: passwordHash,
+        activityLogs: ["Account creation."],
     });
 
-    // Saving user to mongoDB database
     try {
         await user.save();
-        res.status(HttpStatusCode.OK).json(`User with name: ${userName} and email: ${userEmail} created successfully.`);
+        res.status(201).json(`User with name: ${username} and email: ${email} created successfully.`);
+        return;
     }
     catch (err) {
-        // MongoDB internal errors
         next(err);
         return;
     }
 }
 
-// Removes user with the specified email | name and password if exists
-export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Casting body as IGetUserValidatorSchema interface and writing data to variables
-    const body: IGetUserValidatorSchema = req.body as IGetUserValidatorSchema;
-    const userName: string | undefined = body.name;
-    const userEmail: string | undefined = body.email;
-    const userPassword: string = body.password;
+// export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+//     const body: IGetUserValidatorSchema = req.body as IGetUserValidatorSchema;
+//     const userName: string | undefined = body.name;
+//     const userEmail: string | undefined = body.email;
+//     const userPassword: string = body.password;
 
-    try {
-        // Searching for user in the db with userName or userEmail
-        const userData: IUserSchema | null = await searchUser(userName, userEmail);
-        if (!userData) {
-            res.status(HttpStatusCode.NOT_FOUND).json('User not found');
-            return;
-        }
+//     try {
+//         const userData: UserType | null = await searchUser(userName, userEmail);
+//         if (!userData) {
+//             res.status(HttpStatusCode.NOT_FOUND).json('User not found');
+//             return;
+//         }
 
-        // Checking if the password is correct
-        const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
-        if (!isMatch) {
-            res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
-            return;
-        }
+//         const isMatch: boolean = await bcrypt.compare(userPassword, userData.passwordHash);
+//         if (!isMatch) {
+//             res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
+//             return;
+//         }
 
-        // Deleting user with specified _id
-        await UserSchema.deleteOne({ _id: userData._id });
-        res.status(HttpStatusCode.NO_CONTENT).json();
-    } catch (err) {
-        // MongoDB internal errors (deleteOne or findOne) or bcrypt comparison errors
-        next(err);
-        return;
-    }
-}
+//         await UserSchema.deleteOne({ _id: userData._id });
+//         res.status(HttpStatusCode.NO_CONTENT).json();
+//     } catch (err) {
+//         next(err);
+//         return;
+//     }
+// }
 
-export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
-    const body: IUpdateUserValidatorSchema = req.body as IUpdateUserValidatorSchema;
-    const userName: string | undefined = body.name;
-    const userEmail: string | undefined = body.email;
-    const userPassword: string = body.password;
+// export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
+//     const body: IUpdateUserValidatorSchema = req.body as IUpdateUserValidatorSchema;
+//     const userName: string | undefined = body.name;
+//     const userEmail: string | undefined = body.email;
+//     const userPassword: string = body.password;
 
-    const newUserName: string | undefined = body.newName;
-    const newUserPassword: string | undefined = body.newPassword;
-    const newUserEmail: string | undefined = body.newEmail;
+//     const newUserName: string | undefined = body.newName;
+//     const newUserPassword: string | undefined = body.newPassword;
+//     const newUserEmail: string | undefined = body.newEmail;
 
-    try {
-        // Searching for user in the db with userName or userEmail
-        const userData: IUserSchema | null = await searchUser(userName, userEmail);
-        if (!userData) {
-            res.status(HttpStatusCode.NOT_FOUND).json('User not found');
-            return;
-        }
+//     try {
+//         // Searching for user in the db with userName or userEmail
+//         const userData: UserType | null = await searchUser(userName, userEmail);
+//         if (!userData) {
+//             res.status(HttpStatusCode.NOT_FOUND).json('User not found');
+//             return;
+//         }
 
-        // Checking if the password is correct
-        const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
-        if (!isMatch) {
-            res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
-            return;
-        }
+//         // Checking if the password is correct
+//         const isMatch: boolean = await bcrypt.compare(userPassword, userData.passwordHash);
+//         if (!isMatch) {
+//             res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
+//             return;
+//         }
 
-        // Updating with specified _id
-        if (newUserName) {
-            await UserSchema.findOneAndUpdate({ _id: userData._id }, { name: newUserName });
-        }
-        if (newUserPassword) {
-            const hash: string = await bcrypt.hash(newUserPassword, SALT_ROUNDS);
-            await UserSchema.findOneAndUpdate({ _id: userData._id }, { password: hash });
-        }
-        if (newUserEmail) {
-            await UserSchema.findOneAndUpdate({ _id: userData._id }, { email: newUserEmail });
-        }
-        res.status(HttpStatusCode.NO_CONTENT).json();
-    } catch (err) {
-        // MongoDB internal errors (findOneAndUpdate or findOne) or bcrypt comparison, hashing errors
-        next(err);
-        return;
-    }
-}
+//         // Updating with specified _id
+//         if (newUserName) {
+//             await UserSchema.findOneAndUpdate({ _id: userData._id }, { name: newUserName });
+//         }
+//         if (newUserPassword) {
+//             const hash: string = await bcrypt.hash(newUserPassword, SALT_ROUNDS);
+//             await UserSchema.findOneAndUpdate({ _id: userData._id }, { password: hash });
+//         }
+//         if (newUserEmail) {
+//             await UserSchema.findOneAndUpdate({ _id: userData._id }, { email: newUserEmail });
+//         }
+//         res.status(HttpStatusCode.NO_CONTENT).json();
+//     } catch (err) {
+//         // MongoDB internal errors (findOneAndUpdate or findOne) or bcrypt comparison, hashing errors
+//         next(err);
+//         return;
+//     }
+// }
 

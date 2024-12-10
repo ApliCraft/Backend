@@ -109,7 +109,8 @@ const RecipeSchema = new Schema({
     keyWords: {
         type: [String],
         required: true,
-    }
+    },
+    likedBy: { type: [Types.ObjectId], default: [], ref: "User" }
 });
 
 export type RecipeType = InferSchemaType<typeof RecipeSchema>;

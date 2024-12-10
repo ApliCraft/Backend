@@ -7,6 +7,10 @@ import { IAddRecipeValidatorSchema } from "../utils/validators/recipeValidator";
 import { searchProductById } from "../services/productServices";
 import { Types } from "mongoose";
 
+export const vectorSearchRecipe = async (_: Request, res: Response) => {
+    res.sendStatus(501);
+}
+
 export const getRecipe = async (req: Request, res: Response, next: NextFunction) => {
     const { searchTerm, sendImages } = req.body;
 

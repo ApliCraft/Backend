@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { HttpStatusCode } from '../config/statusCodes';
 import { ZodSchema } from 'zod';
-// import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../utils/jwt';
 
-// import IUserResponseData from '../interfaces/userResponseData';
 
 
 export const validate = (schema: ZodSchema): (req: Request, res: Response, next: NextFunction) => void => {
@@ -17,28 +16,25 @@ export const validate = (schema: ZodSchema): (req: Request, res: Response, next:
     }
 }
 
-// export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-//     const authHeader = req.headers['authorization'];
-//     const token = authHeader?.split(' ')[1];
+export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
+    const token = req.headers.authorization?.split(' ')[1];
 
-//     if (!token) {
-//         next();
-//         return;
-//     }
+    if (!token) {
+        res.status(400).json('No token provided');
+        return;
+    }
 
-//     const secretKey: string = process.env.ACCESS_TOKEN_SECRET!.toString();
+    try {
+        const decoded = verifyAccessToken(token);
+        if (!decoded) {
+            res.status(401).json('Invalid token.');
+            return;
+        }
 
-//     jwt.verify(token, secretKey, (err, user) => {
-//         if (err) {
-//             res.status(HttpStatusCode.FORBIDDEN).json({ message: 'Invalid token' });
-//             return;
-//         }
-
-//         const userResponseData = user as IUserResponseData;
-//         if (userResponseData.email && userResponseData.name) {
-//             req.tokenData = userResponseData;
-//             req.isAuthenticated = true;
-//         }
-//         next();
-//     })
-// }
+        req.tokenData = decoded;
+        next();
+    } catch (err) {
+        res.sendStatus(500);
+        return
+    }
+}
