@@ -58,7 +58,15 @@ const UserSchema = new Schema({
     privacySettings: { type: Map, of: Boolean },
     contentPreferences: { type: [String], default: [] },
 
-    activityLogs: { type: [String], default: [] },
+    activityLogs: {
+        type: [
+            {
+                message: { type: String, required: true },
+                date: { type: Date, default: Date.now },
+                _id: { type: Types.ObjectId, required: false, select: false, auto: true }
+            }
+        ], default: []
+    },
     searchHistory: { type: [String], default: [] },
 
     savedItems: { type: [String], default: [] },

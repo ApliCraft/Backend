@@ -55,6 +55,48 @@ router.get("/:id/update-like-count", authenticateToken, async (req, res) => {
     res.status(200).json("Updated like count.");
 })
 
+router.get("/:id/delete-like-count", authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const data = req.tokenData;
+
+    if (!Types.ObjectId.isValid(id)) {
+        res.status(400).json('Invalid MongoDB ObjectId');
+        return;
+    }
+
+    const userData = await User.findById(data.sub);
+    if (!userData) {
+        res.status(404).json('User not found.');
+        return;
+    };
+
+
+    const recipe = await Recipe.findById(id);
+    if (!recipe) {
+        res.status(404).json('Recipe not found.');
+        return;
+    }
+
+    if (!(await User.findOne({
+        _id: data.sub,
+        likedRecipes: { $in: [recipe._id] }
+    }))) {
+        res.status(409).json("Recipe not liked by this user");
+        return;
+    }
+
+
+    userData.likedRecipes.remove(recipe);
+    userData.save();
+
+    recipe.likedBy.remove(userData);
+    recipe.likeQuantity = recipe.likedBy.length;
+    recipe.save();
+
+
+    res.status(200).json("Updated like count.");
+})
+
 router.get("/:id", async (req, res, next) => {
     const { id } = req.params;
 

@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 
-import { IGetUserValidatorSchema, ICreateUserValidatorSchema } from '../utils/validators/userValidator';
+import { IGetUserValidatorSchema, ICreateUserValidatorSchema, IUpdateUserValidatorSchema } from '../utils/validators/userValidator';
 import UserSchema, { UserType } from "../models/userModel"
 import { searchUser } from '../services/userServices';
 import { generateAccessToken, generateRefreshToken, verifyAccessToken, verifyRefreshToken } from '../utils/jwt';
@@ -164,7 +164,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
         username,
         email,
         password: passwordHash,
-        activityLogs: ["Account creation."],
+        activityLogs: [{ message: "Account creation.", date: new Date() }],
     });
 
     try {
@@ -178,74 +178,91 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     }
 }
 
-// export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-//     const body: IGetUserValidatorSchema = req.body as IGetUserValidatorSchema;
-//     const userName: string | undefined = body.name;
-//     const userEmail: string | undefined = body.email;
-//     const userPassword: string = body.password;
+export const deleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const body: IGetUserValidatorSchema = req.body as IGetUserValidatorSchema;
+    const userEmail: string | undefined = body.email;
+    const userPassword: string = body.password;
 
-//     try {
-//         const userData: UserType | null = await searchUser(userName, userEmail);
-//         if (!userData) {
-//             res.status(HttpStatusCode.NOT_FOUND).json('User not found');
-//             return;
-//         }
+    try {
+        const userData: UserType | null = await searchUser(userEmail);
+        if (!userData) {
+            res.status(409).json('User not found');
+            return;
+        }
 
-//         const isMatch: boolean = await bcrypt.compare(userPassword, userData.passwordHash);
-//         if (!isMatch) {
-//             res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
-//             return;
-//         }
+        const isMatch: boolean = await bcrypt.compare(userPassword, userData.password);
+        if (!isMatch) {
+            res.status(401).json('Incorrect password');
+            return;
+        }
 
-//         await UserSchema.deleteOne({ _id: userData._id });
-//         res.status(HttpStatusCode.NO_CONTENT).json();
-//     } catch (err) {
-//         next(err);
-//         return;
-//     }
-// }
+        await UserSchema.deleteOne({ _id: userData._id });
+        res.status(204).json();
+    } catch (err) {
+        next(err);
+        return;
+    }
+}
 
-// export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
-//     const body: IUpdateUserValidatorSchema = req.body as IUpdateUserValidatorSchema;
-//     const userName: string | undefined = body.name;
-//     const userEmail: string | undefined = body.email;
-//     const userPassword: string = body.password;
+export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
+    const { email, password, newUsername, newPassword, newEmail } = req.body as IUpdateUserValidatorSchema;
 
-//     const newUserName: string | undefined = body.newName;
-//     const newUserPassword: string | undefined = body.newPassword;
-//     const newUserEmail: string | undefined = body.newEmail;
+    try {
+        // Searching for user in the db with userName or userEmail
+        const userData: UserType | null = await searchUser(email);
+        if (!userData) {
+            res.status(404).json('User not found');
+            return;
+        }
 
-//     try {
-//         // Searching for user in the db with userName or userEmail
-//         const userData: UserType | null = await searchUser(userName, userEmail);
-//         if (!userData) {
-//             res.status(HttpStatusCode.NOT_FOUND).json('User not found');
-//             return;
-//         }
+        // Checking if the password is correct
+        const isMatch: boolean = await bcrypt.compare(password, userData.password);
+        if (!isMatch) {
+            res.status(401).json('Incorrect password');
+            return;
+        }
 
-//         // Checking if the password is correct
-//         const isMatch: boolean = await bcrypt.compare(userPassword, userData.passwordHash);
-//         if (!isMatch) {
-//             res.status(HttpStatusCode.UNAUTHORIZED).json('Incorrect password');
-//             return;
-//         }
+        // Updating with specified _id
+        if (newUsername) {
+            const users = await UserSchema.find({ username: newUsername });
+            if (users.length > 0) {
+                res.status(409).json("User already exists");
+                return;
+            }
 
-//         // Updating with specified _id
-//         if (newUserName) {
-//             await UserSchema.findOneAndUpdate({ _id: userData._id }, { name: newUserName });
-//         }
-//         if (newUserPassword) {
-//             const hash: string = await bcrypt.hash(newUserPassword, SALT_ROUNDS);
-//             await UserSchema.findOneAndUpdate({ _id: userData._id }, { password: hash });
-//         }
-//         if (newUserEmail) {
-//             await UserSchema.findOneAndUpdate({ _id: userData._id }, { email: newUserEmail });
-//         }
-//         res.status(HttpStatusCode.NO_CONTENT).json();
-//     } catch (err) {
-//         // MongoDB internal errors (findOneAndUpdate or findOne) or bcrypt comparison, hashing errors
-//         next(err);
-//         return;
-//     }
-// }
+            userData.activityLogs.push({ message: `Username changed from ${userData.username} to ${newUsername}.`, date: new Date() });
+            userData.username = newUsername;
+        }
+        if (newPassword) {
+            const hash: string = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+            if (password === newPassword) {
+                res.status(409).json("Passwords must be different.");
+                return;
+            }
+
+            userData.activityLogs.push({ message: `Password changed.`, date: new Date() });
+            userData.password = hash;
+        }
+        if (newEmail) {
+            const users = await UserSchema.find({ email: newEmail });
+            if (users.length > 0) {
+                res.status(409).json("User with this email already exists");
+                return;
+            }
+
+            userData.activityLogs.push({
+                message: `Email changed from ${userData.email} to ${newEmail}.`, date: new Date()
+            });
+            userData.email = newEmail;
+        }
+
+        await userData.save();
+        res.status(204).json();
+    } catch (err) {
+        // MongoDB internal errors (findOneAndUpdate or findOne) or bcrypt comparison, hashing errors
+        next(err);
+        return;
+    }
+}
 

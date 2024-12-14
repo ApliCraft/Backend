@@ -12,16 +12,12 @@ export const GetUserValidatorSchema = z.object({
 });
 
 export const UpdateUserValidatorSchema = z.object({
-    username: z.string().min(3).max(30).optional(),
     password: z.string().min(8).max(30),
-    email: z.string().email().optional(),
+    email: z.string().email(),
     newPassword: z.string().min(8).max(30).optional(),
     newUsername: z.string().min(3).max(30).optional(),
     newEmail: z.string().email().optional(),
-}).refine((data) => data.email || data.username, {
-    message: "Either name or email is required",
-    path: ['email', 'name'],
-}).refine((data) => data.newPassword || data.username || data.newEmail, {
+}).refine((data) => data.newPassword || data.newUsername || data.newEmail, {
     message: "Either new name, new email or new password is required",
     path: ['newEmail', 'newName', 'newPassword'],
 });

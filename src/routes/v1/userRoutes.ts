@@ -1,8 +1,9 @@
 import { Router } from 'express';
-// import { , createUser, deleteUser, updateUser } from "../../controllers/userController";
 import { validate } from "../../middleware/validate";
-import { CreateUserValidatorSchema, GetUserValidatorSchema } from "../../utils/validators/userValidator";
-import { createUser, loginUser, refreshAccessToken, checkToken, checkTokenStrict } from '../../controllers/userController';
+import { CreateUserValidatorSchema, GetUserValidatorSchema, UpdateUserValidatorSchema } from "../../utils/validators/userValidator";
+import { createUser, loginUser, refreshAccessToken, checkToken, checkTokenStrict, deleteUser, updateUser } from '../../controllers/userController';
+import { verifyAccessToken } from '../../utils/jwt';
+import User from '../../models/userModel';
 
 const router: Router = Router();
 
@@ -11,19 +12,39 @@ router.post("/", validate(CreateUserValidatorSchema), createUser);
 router.post('/refresh-token', refreshAccessToken);
 router.post('/check-token', checkToken);
 router.post('/check-token-strict', checkTokenStrict);
+router.delete("/", validate(GetUserValidatorSchema), deleteUser);
+router.put("/", validate(UpdateUserValidatorSchema), updateUser);
+router.get("/logs", async (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
 
-// router.delete("/", validate(GetUserValidatorSchema), deleteUser);
-// router.put("/", validate(UpdateUserValidatorSchema), updateUser);
-// router.post("/check", authenticateToken, async (req, res) => {
-//     const token = req.tokenData;
-//     const isAuthenticated = req.isAuthenticated;
-//     const username = token.name;
+    if (!token) {
+        res.status(400).json('No token provided');
+        return;
+    }
 
-//     console.log(token, isAuthenticated, username);
-//     if (!token || !isAuthenticated || !username) {
-//         res.status(401).json('Unauthenticated');
-//         return;
-//     }
-// })
+    try {
+        const decoded = verifyAccessToken(token);
+        if (!decoded) {
+            res.status(401).json('Invalid token.');
+            return;
+        }
 
+        const user = await User.findById(decoded.sub);
+
+        if (!user) {
+            res.status(404).json('User not found for this token.');
+            return;
+        }
+
+        if (user.jwtToken !== token) {
+            res.status(403).send('Token is invalid.');
+            return;
+        }
+
+        res.status(200).json(user.activityLogs);
+    } catch (err) {
+        next(err);
+        return;
+    }
+});
 export default router;
