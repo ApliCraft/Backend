@@ -6,6 +6,7 @@ import { searchRecipes, searchRecipesPl } from "../services/recipeServices";
 import { IAddRecipeValidatorSchema } from "../utils/validators/recipeValidator";
 import { searchProductById } from "../services/productServices";
 import { Types } from "mongoose";
+import User from "../models/userModel";
 
 export const vectorSearchRecipe = async (_: Request, res: Response) => {
     res.sendStatus(501);
@@ -53,6 +54,17 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
     let fatContentPortion: number = 0;
     let excludedDiets: string[] = [];
     let allergens: string[] = [];
+
+    if (!Types.ObjectId.isValid(author)) {
+        res.status(400).json("Invalid author id.");
+        return;
+    }
+
+    const authorData = await User.findById(author);
+    if (!authorData) {
+        res.status(404).json("Author not found");
+        return;
+    }
 
     // checks if user specified correct ingredient productId
     ingredients.forEach((ingredient) => {
@@ -150,10 +162,10 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
         prepareTime,
         difficulty,
         ingredients,
-        author,
         privacy,
         preDescription,
         name,
+        author: [],
         likeQuantity: 0,
         saveQuantity: 0,
         description,
@@ -167,6 +179,8 @@ export const addRecipe = async (req: Request, res: Response, next: NextFunction)
         excludedDiets: (excludedDiets || []),
         allergens: (allergens || []),
     });
+
+    newRecipe.author.push(authorData);
 
     try {
         await newRecipe.save();

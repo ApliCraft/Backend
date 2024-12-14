@@ -4,6 +4,7 @@ import { CreateUserValidatorSchema, GetUserValidatorSchema, UpdateUserValidatorS
 import { createUser, loginUser, refreshAccessToken, checkToken, checkTokenStrict, deleteUser, updateUser } from '../../controllers/userController';
 import { verifyAccessToken } from '../../utils/jwt';
 import User from '../../models/userModel';
+import { Types } from 'mongoose';
 
 const router: Router = Router();
 
@@ -47,4 +48,29 @@ router.get("/logs", async (req, res, next) => {
         return;
     }
 });
+
+router.get("/:id", async (req, res) => {
+    const { id } = req.params;
+
+    if (!Types.ObjectId.isValid(id)) {
+        res.status(400).json('Invalid user id.');
+        return;
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+        res.status(404).json("User not found.");
+        return;
+    }
+
+    const userInfo = {
+        _id: user._id,
+        email: user.email,
+        username: user.username,
+        signInDate: user.username,
+    }
+    res.status(200).json(userInfo);
+});
+
 export default router;

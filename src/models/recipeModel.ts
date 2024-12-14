@@ -75,7 +75,9 @@ const RecipeSchema = new Schema({
         type: ImageSchema
     },
     author: {
-        type: String, required: true,
+        type: [Types.ObjectId],
+        required: true,
+        ref: "User"
     },
     addDate: {
         type: Date,

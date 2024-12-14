@@ -30,6 +30,10 @@ export async function searchRecipeById(id: string): Promise<RecipeType | null> {
     return await Recipe.findById(id).populate({
         path: 'ingredients.productId',
         model: 'Product',
+    }).populate({
+        path: 'author',
+        model: 'User',
+        select: "_id username email"
     }).lean();
 }
 
