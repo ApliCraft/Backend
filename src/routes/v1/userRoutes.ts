@@ -68,7 +68,7 @@ router.get("/:id", async (req, res) => {
         _id: user._id,
         email: user.email,
         username: user.username,
-        signInDate: user.username,
+        signInDate: user.signInDate,
     }
     res.status(200).json(userInfo);
 });
