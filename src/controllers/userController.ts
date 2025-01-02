@@ -121,8 +121,30 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
             return;
         }
 
+        const now = new Date();
+        if (user.nextUnlockTime && now.getTime() > user.nextUnlockTime.getTime() && user.permanentBan == false) {
+            user.nextUnlockTime = null as any;
+            user.isActive = true;
+            user.loginAttempts = 0;
+        }
+
+        if ((user.loginAttempts + 1) >= 5) {
+            const now = new Date();
+            const oneMinuteFromNow = new Date(now.getTime() + 60 * 1000);
+
+            user.loginAttempts = 5;
+            user.isActive = false;
+            user.nextUnlockTime = oneMinuteFromNow;
+            res.status(403).json(`Maximum logging attempts exceeded. Login again in: one minute.`);
+            await user.save();
+            return;
+        }
+
         const isMatch: boolean = await bcrypt.compare(password, user.password);
         if (!isMatch) {
+            user.loginAttempts = user.loginAttempts + 1;
+
+            await user.save();
             res.status(401).json('Incorrect password');
             return;
         }
@@ -136,6 +158,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 
         user.refreshToken = refreshToken;
         user.jwtToken = accessToken;
+        user.loginAttempts = 0;
 
         await user.save();
 
@@ -305,6 +328,33 @@ export const devicesLoginInfo = async (req: Request, res: Response, next: NextFu
         }
 
         res.status(200).json(user.devicesLoginInfo as DeviceInfoSchemaType);
+    } catch (err) {
+        next(err);
+        return;
+    }
+}
+
+export const userAllInfo = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { email, password } = req.body as IGetUserValidatorSchema;
+
+    try {
+        const user: UserType | null = await searchUser(email);
+        if (!user) {
+            res.status(404).json('User not found');
+            return;
+        }
+
+        const isMatch: boolean = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            res.status(401).json('Incorrect password');
+            return;
+        }
+
+
+
+        await user.save();
+
+        res.status(200).json(user);
     } catch (err) {
         next(err);
         return;

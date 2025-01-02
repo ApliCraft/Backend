@@ -49,6 +49,14 @@ const UserSchema = new Schema({
     },
     isActive: {
         type: Boolean,
+        default: true,
+    },
+    nextUnlockTime: {
+        type: Date,
+        default: null,
+    },
+    permanentBan: {
+        type: Boolean,
         default: false,
     },
     lastLoginDate: Date,
@@ -121,6 +129,6 @@ const UserSchema = new Schema({
 });
 
 
-export type UserType = InferSchemaType<typeof UserSchema> & Document;
+export type UserType = InferSchemaType<typeof UserSchema> & Document & { nextUnlockTime: Date | null; };
 const User = model<UserType>('User', UserSchema);
 export default User;
