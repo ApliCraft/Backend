@@ -1,4 +1,27 @@
-import { Schema, model, Types, InferSchemaType, Document } from 'mongoose';
+import { Schema, model, Types, InferSchemaType, Document, } from 'mongoose';
+
+const DeviceInfoSchema = new Schema({
+    isMobile: { type: Boolean },
+    isMobileNative: { type: Boolean },
+    isTablet: { type: Boolean },
+    isiPad: { type: Boolean },
+    isiPod: { type: Boolean },
+    isiPhone: { type: Boolean },
+    isAndroid: { type: Boolean },
+    isWindowsPhone: { type: Boolean },
+    isSamsung: { type: Boolean },
+    isRaspberry: { type: Boolean },
+    isBot: { type: Schema.Types.Mixed },
+    isAndroidTablet: { type: Boolean },
+    browser: { type: String },
+    version: { type: String },
+    os: { type: String },
+    platform: { type: String },
+    source: { type: String },
+    date: { type: Date, default: new Date(), required: false }
+})
+
+export type DeviceInfoSchemaType = InferSchemaType<typeof DeviceInfoSchema>;
 
 // Define the schema
 const UserSchema = new Schema({
@@ -89,8 +112,14 @@ const UserSchema = new Schema({
     ageVerification: { type: Boolean, default: false },
 
     // integration with products
-    likedRecipes: { type: [Types.ObjectId], default: [], ref: "Recipe" }
+    likedRecipes: { type: [Types.ObjectId], default: [], ref: "Recipe" },
+
+    devicesLoginInfo: {
+        type: [DeviceInfoSchema],
+        default: [],
+    },
 });
+
 
 export type UserType = InferSchemaType<typeof UserSchema> & Document;
 const User = model<UserType>('User', UserSchema);

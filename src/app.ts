@@ -8,6 +8,8 @@ import userRoutes from './routes/v1/userRoutes';
 import recipeRoutes from './routes/v1/recipeRoutes';
 import productRoutes from './routes/v1/productRoutes';
 import { errorHandler } from './middleware/errors';
+import useragent from "express-useragent";
+
 
 const app: Application = express();
 // let isConnectedToMongoDB = false;
@@ -21,6 +23,7 @@ connectToMongoDB();
 // );
 
 // Middleware setup
+app.use(useragent.express());
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: false }));

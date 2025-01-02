@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 
 import { IGetUserValidatorSchema, ICreateUserValidatorSchema, IUpdateUserValidatorSchema } from '../utils/validators/userValidator';
-import UserSchema, { UserType } from "../models/userModel"
+import UserSchema, { DeviceInfoSchemaType, UserType } from "../models/userModel"
 import { searchUser } from '../services/userServices';
 import { generateAccessToken, generateRefreshToken, verifyAccessToken, verifyRefreshToken } from '../utils/jwt';
 import User from '../models/userModel';
@@ -98,6 +98,10 @@ export const refreshAccessToken = async (req: Request, res: Response, next: Next
         user.jwtToken = accessToken;
         user.refreshToken = newRefreshToken;
 
+        if (req.useragent) {
+            user.devicesLoginInfo.push(req.useragent as DeviceInfoSchemaType);
+        }
+
         await user.save();
         res.status(200).json({ accessToken, newRefreshToken });
         return;
@@ -125,6 +129,10 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
 
         const accessToken = generateAccessToken(user._id as string, user.roles);
         const refreshToken = generateRefreshToken(user._id as string);
+
+        if (req.useragent) {
+            user.devicesLoginInfo.push(req.useragent as DeviceInfoSchemaType);
+        }
 
         user.refreshToken = refreshToken;
         user.jwtToken = accessToken;
@@ -168,6 +176,9 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     });
 
     try {
+        if (req.useragent) {
+            user.devicesLoginInfo.push(req.useragent as DeviceInfoSchemaType);
+        }
         await user.save();
         res.status(201).json(`User with name: ${username} and email: ${email} created successfully.`);
         return;
@@ -266,3 +277,36 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     }
 }
 
+export const devicesLoginInfo = async (req: Request, res: Response, next: NextFunction) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        res.status(400).json('No token provided');
+        return;
+    }
+
+    try {
+        const decoded = verifyAccessToken(token);
+        if (!decoded) {
+            res.status(401).json('Invalid token.');
+            return;
+        }
+
+        const user = await User.findById(decoded.sub);
+
+        if (!user) {
+            res.status(404).json('User not found for this token.');
+            return;
+        }
+
+        if (user.jwtToken !== token) {
+            res.status(403).send('Token is invalid.');
+            return;
+        }
+
+        res.status(200).json(user.devicesLoginInfo as DeviceInfoSchemaType);
+    } catch (err) {
+        next(err);
+        return;
+    }
+}

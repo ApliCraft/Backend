@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { validate } from "../../middleware/validate";
 import { CreateUserValidatorSchema, GetUserValidatorSchema, UpdateUserValidatorSchema } from "../../utils/validators/userValidator";
-import { createUser, loginUser, refreshAccessToken, checkToken, checkTokenStrict, deleteUser, updateUser } from '../../controllers/userController';
+import { createUser, loginUser, refreshAccessToken, checkToken, checkTokenStrict, deleteUser, updateUser, devicesLoginInfo } from '../../controllers/userController';
 import { verifyAccessToken } from '../../utils/jwt';
 import User from '../../models/userModel';
 import { Types } from 'mongoose';
 
 const router: Router = Router();
 
+router.get("/devices-login-info", devicesLoginInfo);
 router.post("/login", validate(GetUserValidatorSchema), loginUser);
 router.post("/", validate(CreateUserValidatorSchema), createUser);
 router.post('/refresh-token', refreshAccessToken);
