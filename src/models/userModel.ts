@@ -25,10 +25,6 @@ export type DeviceInfoSchemaType = InferSchemaType<typeof DeviceInfoSchema>;
 
 // Define the schema
 const UserSchema = new Schema({
-    _id: {
-        type: Types.ObjectId,
-        auto: true,
-    },
     username: {
         type: String,
         unique: true,

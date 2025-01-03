@@ -19,6 +19,7 @@ export const getRecipe = async (req: Request, res: Response, next: NextFunction)
         let recipes: (RecipeType & { base64Image?: string })[] = await searchRecipes(searchTerm);
 
         if (sendImages) {
+            console.log(sendImages);
             recipes = await Promise.all(recipes.map(async (recipe: RecipeType & { base64Image?: string }): Promise<RecipeType & { base64Image?: string }> => {
                 if (recipe.photo) {
                     const imagePath = recipe.photo.filePath;

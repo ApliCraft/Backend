@@ -16,10 +16,6 @@ export type ImageType = InferSchemaType<typeof ImageSchema>;
 
 // Recipe Schema
 const RecipeSchema = new Schema({
-    _id: {
-        type: Types.ObjectId,
-        auto: true,
-    },
     name: {
         type: String,
         unique: true,
@@ -51,7 +47,7 @@ const RecipeSchema = new Schema({
     },
     ingredients: [{
         productId: {
-            type: String,
+            type: Types.ObjectId,
             ref: "Product",
             required: true
         },

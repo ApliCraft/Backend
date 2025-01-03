@@ -10,12 +10,12 @@ export async function searchRecipes(searchTerm: string | null = null): Promise<R
         recipes = await Recipe.find({ name: { $regex: new RegExp(searchTerm, "i") } }).populate({
             path: 'ingredients.productId',
             model: 'Product',
-        }).lean();
+        });
     } else {
         recipes = await Recipe.find().populate({
             path: 'ingredients.productId',
             model: 'Product',
-        }).lean();
+        });
     }
 
     return recipes;
@@ -34,7 +34,7 @@ export async function searchRecipeById(id: string): Promise<RecipeType | null> {
         path: 'author',
         model: 'User',
         select: "_id username email"
-    }).lean();
+    });
 }
 
 export async function getRecipesByProductId(ingredientIds: string[]) {

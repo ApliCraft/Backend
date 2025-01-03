@@ -5,7 +5,7 @@ import { authenticateToken, validate } from '../../middleware/validate';
 import { AddRecipeValidatorSchema } from '../../utils/validators/recipeValidator';
 import { Types } from 'mongoose';
 import Recipe, { RecipeType } from '../../models/recipeModel';
-import { handleImagesRead } from '../../helpers/handleImagesRead';
+import fs from "fs/promises"
 import { searchRecipeById } from '../../services/recipeServices';
 import User from '../../models/userModel';
 
@@ -106,19 +106,28 @@ router.get("/:id", async (req, res, next) => {
     }
 
     try {
-        const product: (RecipeType & { base64Image?: string }) | null = await searchRecipeById(id);
+        const recipe: (RecipeType & { base64Image?: string }) | null = await searchRecipeById(id);
 
-        if (!product) {
+        if (!recipe) {
             res.status(404).json('Recipe not found.');
             return;
         }
 
-        if (product.photo) {
-            const imagePath = product.photo.filePath;
-            product.base64Image = await handleImagesRead(imagePath);
+        if (recipe.photo) {
+            const imagePath = recipe.photo.filePath;
+
+            try {
+                await fs.access(imagePath);
+
+                const imageBuffer = await fs.readFile(imagePath);
+                const base64Image = imageBuffer.toString('base64');
+                recipe.base64Image = base64Image;
+            } catch (err) {
+                // err if image does not exist
+            }
         }
 
-        res.status(200).json(product);
+        res.status(200).json(recipe);
     } catch (err) {
         next(err);
         return;
