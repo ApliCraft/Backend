@@ -1,4 +1,4 @@
-# Backend v0.1.1
+# Backend v0.2.0
 
 Current api version: **API v1**
 
