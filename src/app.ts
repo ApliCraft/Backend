@@ -9,6 +9,7 @@ import recipeRoutes from './routes/v1/recipeRoutes';
 import productRoutes from './routes/v1/productRoutes';
 import { errorHandler } from './middleware/errors';
 import useragent from "express-useragent";
+import imageRoutes from "./routes/v1/imageRoutes";
 
 
 const app: Application = express();
@@ -32,6 +33,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/recipe", recipeRoutes)
 app.use("/api/v1/product", productRoutes);
+app.use("/api/v1/images", imageRoutes)
 
 // Error handling middleware
 app.use(errorHandler);
