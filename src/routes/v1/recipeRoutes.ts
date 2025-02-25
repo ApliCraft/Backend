@@ -141,5 +141,6 @@ router.post("/get", getRecipe);
 router.post("/add", validate(AddRecipeValidatorSchema), addRecipe);
 router.post("/vector-search", vectorSearchRecipe);
 router.post("/get-by-category", getRecipeIdsByFilter);
+router.post("/get-ids-by-params", getRecipeIdsByFilter);
 
 export default router;
