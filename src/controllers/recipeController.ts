@@ -243,6 +243,8 @@ export const getRecipeIdsByFilter = async (req: Request, res: Response) => {
   if (token) {
     try {
       const decoded = verifyAccessToken(token);
+      console.log(decoded);
+
       if (decoded) {
         const user = await User.findById(decoded.sub);
         if (user) {
