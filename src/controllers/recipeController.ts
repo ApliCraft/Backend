@@ -5,7 +5,7 @@ import RecipeSchema, { ImageType, RecipeType } from "../models/recipeModel";
 import { searchRecipes, searchRecipesPl } from "../services/recipeServices";
 import { IAddRecipeValidatorSchema } from "../utils/validators/recipeValidator";
 import { searchProductById } from "../services/productServices";
-import { Types } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import User from "../models/userModel";
 import { verifyAccessToken } from "../utils/jwt";
 
@@ -281,4 +281,38 @@ export const getRecipeIdsByFilter = async (req: Request, res: Response) => {
   const recipeIds = await query;
 
   res.status(200).json(recipeIds);
+};
+
+export const getLikedRecipes = async (req: Request, res: Response) => {
+  const token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    res.status(401).json("Token required to access liked recipes");
+    return;
+  }
+
+  try {
+    const decoded = verifyAccessToken(token);
+
+    if (!decoded) {
+      res.status(401).json("Unauthorized");
+      return;
+    }
+
+    if (!isValidObjectId(decoded.sub)) {
+      res.status(401).json("Unauthorized");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+    if (user) {
+      res.status(200).json(user.likedRecipes);
+      return;
+    }
+  } catch (err) {
+    res.status(401).json("Unauthorized");
+    return;
+  }
+
+  res.status(401).json("Unauthorized");
 };

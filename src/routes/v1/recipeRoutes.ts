@@ -4,6 +4,7 @@ import {
   addRecipe,
   vectorSearchRecipe,
   getRecipeIdsByFilter,
+  getLikedRecipes,
 } from "../../controllers/recipeController";
 import { authenticateToken, validate } from "../../middleware/validate";
 
@@ -142,5 +143,6 @@ router.post("/add", validate(AddRecipeValidatorSchema), addRecipe);
 router.post("/vector-search", vectorSearchRecipe);
 router.post("/get-by-category", getRecipeIdsByFilter);
 router.post("/get-ids-by-params", getRecipeIdsByFilter);
+router.post("/get-liked-recipes", getLikedRecipes);
 
 export default router;
