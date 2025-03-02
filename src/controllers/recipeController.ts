@@ -229,7 +229,7 @@ export const addRecipe = async (
 };
 
 export const getRecipeIdsByFilter = async (req: Request, res: Response) => {
-  const { category, from, limit, privacy } = req.body;
+  const { category, from, limit, privacy, liked } = req.body;
   const token = req.headers.authorization?.split(" ")[1];
 
   if (privacy && !token) {
@@ -237,29 +237,47 @@ export const getRecipeIdsByFilter = async (req: Request, res: Response) => {
     return;
   }
 
+  if (liked && !token) {
+    res.status(401).json("Token required to access liked recipes");
+    return;
+  }
+
   let query;
-  let queryConditions: any = { privacy: "public" };
+  let queryConditions: any = {};
+  let likedRecipes: string[] = [];
 
   if (token) {
     try {
       const decoded = verifyAccessToken(token);
-      console.log(decoded);
 
-      if (decoded) {
-        const user = await User.findById(decoded.sub);
-        if (user) {
-          if (privacy === "private") {
-            queryConditions = {
-              privacy: "private",
-              author: user._id,
-            };
-          } else {
-            queryConditions = { privacy: "public" };
-          }
-        } else {
-          res.status(401).json("Unauthorized");
-          return;
-        }
+      if (!decoded) {
+        res.status(401).json("Unauthorized");
+        return;
+      }
+
+      if (!isValidObjectId(decoded.sub)) {
+        res.status(401).json("Unauthorized");
+        return;
+      }
+
+      const user = await User.findById(decoded.sub);
+
+      if (!user) {
+        res.status(401).json("Unauthorized");
+        return;
+      }
+
+      if (liked) {
+        likedRecipes = user.likedRecipes.map((recipe) => recipe.toString());
+      }
+
+      if (privacy === "private") {
+        queryConditions = {
+          privacy: "private",
+          author: user._id,
+        };
+      } else {
+        queryConditions = {};
       }
     } catch (err) {
       console.log(err);
@@ -273,6 +291,10 @@ export const getRecipeIdsByFilter = async (req: Request, res: Response) => {
   }
 
   query = RecipeSchema.find(queryConditions, { _id: 1 }).lean().select("_id");
+
+  if (liked && likedRecipes.length > 0) {
+    query = query.find({ _id: { $in: likedRecipes } });
+  }
 
   if (from !== undefined && limit !== undefined) {
     query = query.skip(from).limit(limit);
