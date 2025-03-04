@@ -1,4 +1,10 @@
-import { Schema, model, Types, InferSchemaType, Document } from "mongoose";
+import mongoose, {
+  Schema,
+  model,
+  Types,
+  InferSchemaType,
+  Document,
+} from "mongoose";
 
 const DeviceInfoSchema = new Schema({
   isMobile: { type: Boolean },
@@ -130,11 +136,23 @@ const UserSchema = new Schema({
   likedRecipes: { type: [Types.ObjectId], default: [], ref: "Recipe" },
 
   devicesLoginInfo: {
-    type: [DeviceInfoSchema],
+    type: [],
     default: [],
   },
 
   avatarLink: { type: String, default: "", required: false },
+  storage: {
+    type: [
+      {
+        product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+        quantity: { type: Number, default: 0 },
+        unit: { type: String, default: "g/ml" },
+        addDate: { type: Date, default: Date.now },
+        expirationDate: { type: Date, default: null },
+      },
+    ],
+    default: [],
+  },
 });
 
 export type UserType = InferSchemaType<typeof UserSchema> &
