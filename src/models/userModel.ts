@@ -153,6 +153,11 @@ const UserSchema = new Schema({
     ],
     default: [],
   },
+
+  country: {
+    type: String,
+    required: false,
+  },
 });
 
 export type UserType = InferSchemaType<typeof UserSchema> &

@@ -208,7 +208,7 @@ export const createUser = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { username, email, password } = req.body as ICreateUserValidatorSchema;
+  const { username, email, password, dateOfBirth, phoneNumber, country } = req.body as ICreateUserValidatorSchema;
 
   try {
     if (await searchUser(email, username)) {
@@ -232,6 +232,9 @@ export const createUser = async (
     username,
     email,
     password: passwordHash,
+    dateOfBirth,
+    phoneNumber,
+    country,
     activityLogs: [{ message: "Account creation.", date: new Date() }],
   });
 
@@ -469,6 +472,12 @@ export const getUserInfo = async (
       loginAttempts: user.loginAttempts,
       likedRecipes: user.likedRecipes,
       description: user.description,
+      // Additional fields
+      firstName: user.firstName,
+      lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      phoneNumber: user.phoneNumber,
+      country: user.country
     };
 
     res.status(200).json(responseData);
@@ -549,6 +558,9 @@ export const updateUserProfile = async (
     email,
     password,
     currentPassword,
+    dateOfBirth,
+    phoneNumber,
+    country
   } = req.body;
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -574,6 +586,9 @@ export const updateUserProfile = async (
     if (description) user.description = description;
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    if (dateOfBirth) user.dateOfBirth = new Date(dateOfBirth);
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (country) user.country = country;
 
     // Handle username change
     if (username && username !== user.username) {
@@ -621,6 +636,9 @@ export const updateUserProfile = async (
       lastName: user.lastName,
       description: user.description,
       avatarLink: user.avatarLink,
+      dateOfBirth: user.dateOfBirth,
+      phoneNumber: user.phoneNumber,
+      country: user.country
     };
 
     res.status(200).json(userInfo);

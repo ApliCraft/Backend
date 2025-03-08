@@ -101,6 +101,7 @@ router.get("/:id", async (req, res) => {
     friendsList: friendsListLength,
     likedRecipes: likedRecipesLength,
     description: user.description,
+    country: user.country,
     // lista przepisy
   };
   res.status(200).json(userInfo);
