@@ -4,6 +4,8 @@ export const CreateUserValidatorSchema = z.object({
     username: z.string().min(3).max(30),
     password: z.string().min(8).max(30),
     email: z.string().email(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
     dateOfBirth: z.string().refine(dateStr => {
         const date = new Date(dateStr);
         const ageDiff = new Date().getFullYear() - date.getFullYear();

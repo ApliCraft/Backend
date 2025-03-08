@@ -208,7 +208,7 @@ export const createUser = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { username, email, password, dateOfBirth, phoneNumber, country } = req.body as ICreateUserValidatorSchema;
+  const { username, email, password, firstName, lastName, dateOfBirth, phoneNumber, country } = req.body as ICreateUserValidatorSchema;
 
   try {
     if (await searchUser(email, username)) {
@@ -232,6 +232,8 @@ export const createUser = async (
     username,
     email,
     password: passwordHash,
+    firstName, 
+    lastName, 
     dateOfBirth,
     phoneNumber,
     country,
