@@ -9,11 +9,14 @@ import {
 import { authenticateToken, validate } from "../../middleware/validate";
 
 import { AddRecipeValidatorSchema } from "../../utils/validators/recipeValidator";
-import { Types } from "mongoose";
+import { isValidObjectId, Types } from "mongoose";
 import Recipe, { RecipeType } from "../../models/recipeModel";
 import fs from "fs/promises";
 import { searchRecipeById } from "../../services/recipeServices";
 import User from "../../models/userModel";
+import {
+  generateEmbedding,
+} from "../../services/ollama";
 
 const router: Router = Router();
 
@@ -141,6 +144,34 @@ router.get("/:id", async (req, res, next) => {
 router.post("/get", getRecipe);
 router.post("/add", validate(AddRecipeValidatorSchema), addRecipe);
 router.post("/vector-search", vectorSearchRecipe);
+router.post("/add-embedding/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) {
+    res.status(400);
+    return;
+  }
+  try {
+    const recipe = await Recipe.findById(id);
+    if (!recipe) {
+      res.status(404).json("recipe not found");
+      return;
+    }
+
+    const embedding = await generateEmbedding(
+      recipe.name + " " + recipe.description
+    );
+
+    // @ts-ignore
+    recipe.embedding = embedding;
+    await recipe.save();
+    res.status(200).json("OK");
+  } catch (err) {
+    console.log(err);
+    res.status(500);
+    return;
+  }
+});
 router.post("/get-by-category", getRecipeIdsByFilter);
 router.post("/get-ids-by-params", getRecipeIdsByFilter);
 router.post("/get-liked-recipes", getLikedRecipes);

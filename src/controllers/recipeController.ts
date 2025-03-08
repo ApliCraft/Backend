@@ -8,9 +8,43 @@ import { searchProductById } from "../services/productServices";
 import { isValidObjectId, Types } from "mongoose";
 import User from "../models/userModel";
 import { verifyAccessToken } from "../utils/jwt";
+import { z } from "zod";
+import Recipe from "../models/recipeModel";
+import { generateEmbedding } from "../services/ollama";
 
-export const vectorSearchRecipe = async (_: Request, res: Response) => {
-  res.sendStatus(501);
+const schema = z.object({
+  query: z.string(),
+});
+
+export const vectorSearchRecipe = async (req: Request, res: Response) => {
+  try {
+    let searchQuery;
+    try {
+      const { query } = schema.parse(req.body);
+      searchQuery = query;
+    } catch (err) {
+      res.status(400).json(err);
+      return;
+    }
+
+    const searchVector = await generateEmbedding(searchQuery);
+
+    const result = await Recipe.aggregate([
+      {
+        $vectorSearch: {
+          index: "vector_index",
+          path: "embedding",
+          queryVector: searchVector[0],
+          numCandidates: 25,
+          limit: 5,
+        },
+      },
+    ]);
+
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(500).json(err);
+  }
 };
 
 export const getRecipe = async (
