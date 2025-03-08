@@ -14,9 +14,7 @@ import Recipe, { RecipeType } from "../../models/recipeModel";
 import fs from "fs/promises";
 import { searchRecipeById } from "../../services/recipeServices";
 import User from "../../models/userModel";
-import {
-  generateEmbedding,
-} from "../../services/ollama";
+import { generateEmbedding } from "../../services/ollama";
 
 const router: Router = Router();
 
@@ -144,6 +142,44 @@ router.get("/:id", async (req, res, next) => {
 router.post("/get", getRecipe);
 router.post("/add", validate(AddRecipeValidatorSchema), addRecipe);
 router.post("/vector-search", vectorSearchRecipe);
+router.post("/toggle-visibility/:id", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.tokenData;
+
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json("Invalid MongoDB ObjectId");
+      return;
+    }
+
+    const userData = await User.findById(data.sub);
+    if (!userData) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    const recipe = await Recipe.findById(id);
+    if (!recipe) {
+      res.status(404).json("Recipe not found.");
+      return;
+    }
+
+    console.log(recipe.author[0].toString());
+    console.log(userData._id!.toString());
+    if (recipe.author[0].toString() !== userData._id!.toString()) {
+      res.status(401).json("It's not your recipe");
+      return;
+    }
+
+    recipe.privacy = recipe.privacy === "private" ? "public" : "private";
+    await recipe.save();
+    res.status(200).json();
+  } catch (err) {
+    console.log(err);
+    res.status(500).json();
+    return;
+  }
+});
 router.post("/add-embedding/:id", async (req, res) => {
   const { id } = req.params;
 
