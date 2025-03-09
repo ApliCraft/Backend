@@ -562,6 +562,7 @@ export const updateUserProfile = async (
     currentPassword,
     dateOfBirth,
     phoneNumber,
+    avatarLink,
     country
   } = req.body;
   const token = req.headers.authorization?.split(" ")[1];
@@ -588,6 +589,7 @@ export const updateUserProfile = async (
     if (description) user.description = description;
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    if (avatarLink) user.avatarLink = avatarLink;
     if (dateOfBirth) user.dateOfBirth = new Date(dateOfBirth);
     if (phoneNumber) user.phoneNumber = phoneNumber;
     if (country) user.country = country;
