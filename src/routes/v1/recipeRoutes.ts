@@ -19,87 +19,113 @@ import { generateEmbedding } from "../../services/ollama";
 const router: Router = Router();
 
 router.get("/:id/update-like-count", authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  const data = req.tokenData;
+  try {
+    const { id } = req.params;
+    const data = req.tokenData;
 
-  if (!Types.ObjectId.isValid(id)) {
-    res.status(400).json("Invalid MongoDB ObjectId");
-    return;
-  }
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json("Invalid MongoDB ObjectId");
+      return;
+    }
 
-  console.log(data.sub);
-  const userData = await User.findById(data.sub);
-  if (!userData) {
-    res.status(404).json("User not found.");
-    return;
-  }
+    const userId = data.sub;
+    
+    const userData = await User.findById(userId);
+    if (!userData) {
+      res.status(404).json("User not found.");
+      return;
+    }
 
-  const recipe = await Recipe.findById(id);
+    const recipe = await Recipe.findById(id);
+    if (!recipe) {
+      res.status(404).json("Recipe not found.");
+      return;
+    }
 
-  if (!recipe) {
-    res.status(404).json("Recipe not found.");
-    return;
-  }
-
-  if (
-    await User.findOne({
-      _id: data.sub,
+    // Check if user already liked this recipe
+    if (await User.findOne({
+      _id: userId,
       likedRecipes: { $in: [recipe._id] },
-    })
-  ) {
-    res.status(409).json("Recipe already liked");
-    return;
+    })) {
+      res.status(409).json("Recipe already liked");
+      return;
+    }
+
+    // Add recipe to user's likedRecipes
+    await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { likedRecipes: recipe._id } }
+    );
+
+    // Add user's ID to recipe's likedBy and update likeQuantity
+    await Recipe.findByIdAndUpdate(
+      id,
+      { 
+        $addToSet: { likedBy: userId },
+        $inc: { likeQuantity: 1 }
+      }
+    );
+
+    res.status(200).json("Updated like count.");
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("Server error");
   }
-
-  userData.likedRecipes.push(recipe);
-  userData.save();
-
-  recipe.likedBy.push(userData);
-  recipe.likeQuantity = recipe.likedBy.length;
-  recipe.save();
-
-  res.status(200).json("Updated like count.");
 });
 
 router.get("/:id/delete-like-count", authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  const data = req.tokenData;
+  try {
+    const { id } = req.params;
+    const data = req.tokenData;
 
-  if (!Types.ObjectId.isValid(id)) {
-    res.status(400).json("Invalid MongoDB ObjectId");
-    return;
-  }
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json("Invalid MongoDB ObjectId");
+      return;
+    }
 
-  const userData = await User.findById(data.sub);
-  if (!userData) {
-    res.status(404).json("User not found.");
-    return;
-  }
+    const userId = data.sub;
+    
+    const userData = await User.findById(userId);
+    if (!userData) {
+      res.status(404).json("User not found.");
+      return;
+    }
 
-  const recipe = await Recipe.findById(id);
-  if (!recipe) {
-    res.status(404).json("Recipe not found.");
-    return;
-  }
+    const recipe = await Recipe.findById(id);
+    if (!recipe) {
+      res.status(404).json("Recipe not found.");
+      return;
+    }
 
-  if (
-    !(await User.findOne({
-      _id: data.sub,
+    // Check if user has liked this recipe
+    if (!(await User.findOne({
+      _id: userId,
       likedRecipes: { $in: [recipe._id] },
-    }))
-  ) {
-    res.status(409).json("Recipe not liked by this user");
-    return;
+    }))) {
+      res.status(409).json("Recipe not liked by this user");
+      return;
+    }
+
+    // Remove recipe from user's likedRecipes
+    await User.findByIdAndUpdate(
+      userId,
+      { $pull: { likedRecipes: recipe._id } }
+    );
+
+    // Remove user's ID from recipe's likedBy and update likeQuantity
+    await Recipe.findByIdAndUpdate(
+      id,
+      { 
+        $pull: { likedBy: userId },
+        $inc: { likeQuantity: -1 }
+      }
+    );
+
+    res.status(200).json("Updated like count.");
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("Server error");
   }
-
-  userData.likedRecipes.remove(recipe);
-  userData.save();
-
-  recipe.likedBy.remove(userData);
-  recipe.likeQuantity = recipe.likedBy.length;
-  recipe.save();
-
-  res.status(200).json("Updated like count.");
 });
 
 router.get("/:id", async (req, res, next) => {
