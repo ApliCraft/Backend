@@ -1370,6 +1370,11 @@ router.post("/planner/daily-nutritional-summary", async (req, res) => {
       });
     });
 
+    planned.calories += consumed.calories;
+    planned.proteins += consumed.proteins;
+    planned.fats += consumed.fats;
+    planned.carbs += consumed.carbs;
+
     res.status(200).json({ planned, consumed });
   } catch (err) {
     console.log(err);
