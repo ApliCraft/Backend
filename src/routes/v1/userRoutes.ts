@@ -1059,7 +1059,10 @@ router.get("/planner/next-meals", async (req, res) => {
 
     if (result) {
       const upcomingMeals = result.planner.meals
-        .filter((meal) => meal.time > now.toTimeString().slice(0, 5))
+        .filter(
+          (meal) =>
+            !meal.completed && meal.time > now.toTimeString().slice(0, 5)
+        )
         .sort((a, b) => a.time.localeCompare(b.time));
 
       res.status(200).json(upcomingMeals);

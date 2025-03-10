@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "v0.18.0",
+  "version": "v0.19.0",
   "description": "The backend for the app.",
   "main": "dist/server.js",
   "scripts": {
