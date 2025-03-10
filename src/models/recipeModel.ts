@@ -4,7 +4,6 @@ import { Schema, model, Types, InferSchemaType } from "mongoose";
 const ImageSchema = new Schema({
   fileName: {
     type: String,
-    required: true,
   },
   filePath: {
     type: String,
@@ -99,10 +98,6 @@ const RecipeSchema = new Schema({
   },
   saveQuantity: {
     type: Number,
-    required: true,
-  },
-  preDescription: {
-    type: String,
     required: true,
   },
   description: {

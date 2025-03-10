@@ -29,7 +29,7 @@ router.get("/:id/update-like-count", authenticateToken, async (req, res) => {
     }
 
     const userId = data.sub;
-    
+
     const userData = await User.findById(userId);
     if (!userData) {
       res.status(404).json("User not found.");
@@ -43,28 +43,26 @@ router.get("/:id/update-like-count", authenticateToken, async (req, res) => {
     }
 
     // Check if user already liked this recipe
-    if (await User.findOne({
-      _id: userId,
-      likedRecipes: { $in: [recipe._id] },
-    })) {
+    if (
+      await User.findOne({
+        _id: userId,
+        likedRecipes: { $in: [recipe._id] },
+      })
+    ) {
       res.status(409).json("Recipe already liked");
       return;
     }
 
     // Add recipe to user's likedRecipes
-    await User.findByIdAndUpdate(
-      userId,
-      { $addToSet: { likedRecipes: recipe._id } }
-    );
+    await User.findByIdAndUpdate(userId, {
+      $addToSet: { likedRecipes: recipe._id },
+    });
 
     // Add user's ID to recipe's likedBy and update likeQuantity
-    await Recipe.findByIdAndUpdate(
-      id,
-      { 
-        $addToSet: { likedBy: userId },
-        $inc: { likeQuantity: 1 }
-      }
-    );
+    await Recipe.findByIdAndUpdate(id, {
+      $addToSet: { likedBy: userId },
+      $inc: { likeQuantity: 1 },
+    });
 
     res.status(200).json("Updated like count.");
   } catch (error) {
@@ -84,7 +82,7 @@ router.get("/:id/delete-like-count", authenticateToken, async (req, res) => {
     }
 
     const userId = data.sub;
-    
+
     const userData = await User.findById(userId);
     if (!userData) {
       res.status(404).json("User not found.");
@@ -98,28 +96,26 @@ router.get("/:id/delete-like-count", authenticateToken, async (req, res) => {
     }
 
     // Check if user has liked this recipe
-    if (!(await User.findOne({
-      _id: userId,
-      likedRecipes: { $in: [recipe._id] },
-    }))) {
+    if (
+      !(await User.findOne({
+        _id: userId,
+        likedRecipes: { $in: [recipe._id] },
+      }))
+    ) {
       res.status(409).json("Recipe not liked by this user");
       return;
     }
 
     // Remove recipe from user's likedRecipes
-    await User.findByIdAndUpdate(
-      userId,
-      { $pull: { likedRecipes: recipe._id } }
-    );
+    await User.findByIdAndUpdate(userId, {
+      $pull: { likedRecipes: recipe._id },
+    });
 
     // Remove user's ID from recipe's likedBy and update likeQuantity
-    await Recipe.findByIdAndUpdate(
-      id,
-      { 
-        $pull: { likedBy: userId },
-        $inc: { likeQuantity: -1 }
-      }
-    );
+    await Recipe.findByIdAndUpdate(id, {
+      $pull: { likedBy: userId },
+      $inc: { likeQuantity: -1 },
+    });
 
     res.status(200).json("Updated like count.");
   } catch (error) {
@@ -221,7 +217,13 @@ router.post("/add-embedding/:id", async (req, res) => {
     }
 
     const embedding = await generateEmbedding(
-      recipe.name + " " + recipe.description
+      recipe.name +
+        " " +
+        recipe.plName +
+        " " +
+        recipe.preparation +
+        " " +
+        recipe.description
     );
 
     // @ts-ignore

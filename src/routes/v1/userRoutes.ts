@@ -1244,6 +1244,169 @@ router.patch("/planner/update-fluid/:id", async (req, res) => {
   }
 });
 
+const addToMealSchema = z.object({
+  _id: z.string(),
+  portion: z.number(),
+  type: z.enum(["product", "recipe"]),
+});
+
+router.patch("/planner/add-to-meal/:id", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = addToMealSchema.parse(req.body);
+    } catch (err) {
+      console.log(err);
+      res.status(400).json("Some data is missing in your request");
+      return;
+    }
+
+    const { id } = req.params;
+
+    const fluidId = new mongoose.Types.ObjectId(id);
+
+    if (!isValidObjectId(fluidId)) {
+      res.status(400).json("wrong id");
+      return;
+    }
+
+    const { portion, _id, type } = parsed;
+
+    if (!isValidObjectId(_id)) {
+      res.status(400).json("id is not correct");
+      return;
+    }
+
+    const updateField =
+      type === "product"
+        ? "planner.meals.$.products"
+        : "planner.meals.$.recipes";
+
+    const result = await Planner.findOneAndUpdate(
+      { userId: user._id, "planner.meals._id": fluidId },
+      {
+        $push: {
+          [updateField]: {
+            [type === "product" ? "productId" : "recipeId"]: _id,
+            amount: type === "product" ? portion : undefined,
+            portion: type === "recipe" ? portion : undefined,
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (result) {
+      res.status(200).json("product added to meal amount updated");
+      return;
+    }
+
+    res.status(404).json("Meal not found or does not belong to you");
+  } catch (err) {
+    console.log(err);
+    res.status(500);
+    return;
+  }
+});
+
+const removeFromMealSchema = z.object({
+  _id: z.string(),
+  type: z.enum(["recipe", "product"]),
+});
+
+router.delete("/planner/remove-from-meal/:id", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = removeFromMealSchema.parse(req.body);
+    } catch (err) {
+      console.log(err);
+      res.status(400).json("Some data is missing in your request");
+      return;
+    }
+
+    const { id } = req.params;
+
+    const fluidId = new mongoose.Types.ObjectId(id);
+
+    if (!isValidObjectId(fluidId)) {
+      res.status(400).json("wrong id");
+      return;
+    }
+
+    const { _id, type } = parsed;
+
+    if (!isValidObjectId(_id)) {
+      res.status(400).json("id is not correct");
+      return;
+    }
+
+    const result = await Planner.findOneAndUpdate(
+      { userId: user._id, "planner.meals._id": fluidId },
+      {
+        $pull: {
+          "planner.meals.$.recipes":
+            type === "recipe" ? { recipeId: _id } : undefined,
+          "planner.meals.$.products":
+            type === "product" ? { productId: _id } : undefined,
+        },
+      },
+      { new: true }
+    );
+
+    if (result) {
+      res.status(200).json("product added to meal amount updated");
+      return;
+    }
+
+    res.status(404).json("Meal not found or does not belong to you");
+  } catch (err) {
+    console.log(err);
+    res.status(500);
+    return;
+  }
+});
+
 router.post("/planner/daily-nutritional-summary", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
