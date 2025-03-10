@@ -25,7 +25,7 @@ import mongoose, { isValidObjectId, Types } from "mongoose";
 import z from "zod";
 import Product from "../../models/productModel";
 import _ from "ollama/browser";
-import Planner, { MealType } from "../../models/plannerModel";
+import Planner, { FluidType, MealType } from "../../models/plannerModel";
 
 const router: Router = Router();
 
@@ -584,6 +584,91 @@ router.post("/planner/add-meal", async (req, res) => {
     }
 
     planner.planner.meals.push(newMeal);
+
+    await planner.save();
+
+    res.status(200).json(dateString);
+  } catch (err) {
+    console.log(err);
+    res.status(500);
+    return;
+  }
+});
+
+const addFluidSchema = z.object({
+  date: z.coerce.date(),
+  _id: z.string(), // product or recipe valid mongodb _id
+  amount: z.number(), // if product => amount, if recipe => portion
+});
+
+router.post("/planner/add-fluid", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = addFluidSchema.parse(req.body);
+    } catch (err) {
+      console.log(err);
+      res.status(400).json("Some data is missing in your request");
+      return;
+    }
+
+    const { _id } = parsed;
+
+    if (!isValidObjectId(_id)) {
+      res.status(400).json("Not correct _id.");
+      return;
+    }
+
+    const { date, amount } = parsed;
+
+    const dateString = formatDate(date);
+
+    const planner = await Planner.findOne({
+      userId: user._id,
+      day: dateString,
+    });
+
+    if (!planner) {
+      const newPlanner = new Planner({
+        day: dateString,
+        userId: user._id,
+      });
+
+      newPlanner.planner.fluids.push({
+        fluidId: _id,
+        amount,
+      });
+
+      await newPlanner.save();
+
+      res.status(200).json("Planner created");
+      return;
+    }
+
+    planner.planner.fluids.push({
+      fluidId: _id,
+      amount,
+    });
 
     await planner.save();
 

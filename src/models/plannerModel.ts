@@ -68,6 +68,7 @@ const plannerSchema = new Schema(
   { timestamps: true }
 );
 
+export type FluidType = InferSchemaType<typeof FluidEntrySchema>;
 export type MealType = InferSchemaType<typeof MealSchema>;
 export type PlannerType = InferSchemaType<typeof plannerSchema>;
 const Planner = model<PlannerType>("Planner", plannerSchema);
