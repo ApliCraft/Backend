@@ -739,6 +739,57 @@ router.post("/planner/meals", async (req, res) => {
   }
 });
 
+router.patch("/planner/change-completion/:id", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+    const { completed = false } = req.body;
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      res.status(400).json("wrong id");
+      return;
+    }
+
+    const mealId = new mongoose.Types.ObjectId(id);
+
+    const result = await Planner.findOneAndUpdate(
+      { userId: user._id, "planner.meals._id": mealId },
+      { $set: { "planner.meals.$.completed": completed } },
+      { new: true }
+    );
+
+    if (result) {
+      res.status(200).json("meal updated");
+      return;
+    }
+
+    res.status(404).json("meal not found or not belongs to you");
+  } catch (err) {
+    console.log(err);
+    res.status(500).json();
+    return;
+  }
+});
+
 router.post("/planner/get", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
