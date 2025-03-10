@@ -1018,4 +1018,67 @@ router.get("/planner/next-meals", async (req, res) => {
   }
 });
 
+router.post("/planner/fluid-count", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = mealsSchema.parse(req.body);
+    } catch (err) {
+      console.log(err);
+      res.status(400).json("Some data is missing in your request");
+      return;
+    }
+
+    const { date } = parsed;
+
+    const dateString = formatDate(date);
+
+    const planner = await Planner.findOne({
+      userId: user._id,
+      day: dateString,
+    });
+
+    if (!planner) {
+      res.status(404).json("planner not found, maybe it doesnt exist?");
+      return;
+    }
+
+    const totalFluidAmount = planner.planner.fluids.reduce(
+      (total, fluid) => total + fluid.amount,
+      0
+    );
+    res
+      .status(200)
+      .json({
+        dateString,
+        consumed: totalFluidAmount,
+        amount: planner.fluidIntakeAmount,
+      });
+  } catch (err) {
+    console.log(err);
+    res.status(500);
+    return;
+  }
+});
+
 export default router;
