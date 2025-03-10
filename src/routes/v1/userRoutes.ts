@@ -738,4 +738,133 @@ router.post("/planner/meals", async (req, res) => {
   }
 });
 
+router.post("/planner/add-fluid", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = addFluidSchema.parse(req.body);
+    } catch (err) {
+      console.log(err);
+      res.status(400).json("Some data is missing in your request");
+      return;
+    }
+
+    const { _id } = parsed;
+
+    if (!isValidObjectId(_id)) {
+      res.status(400).json("Not correct _id.");
+      return;
+    }
+
+    const { date, amount } = parsed;
+
+    const dateString = formatDate(date);
+
+    const planner = await Planner.findOne({
+      userId: user._id,
+      day: dateString,
+    });
+
+    if (!planner) {
+      const newPlanner = new Planner({
+        day: dateString,
+        userId: user._id,
+      });
+
+      newPlanner.planner.fluids.push({
+        fluidId: _id,
+        amount,
+      });
+
+      await newPlanner.save();
+
+      res.status(200).json("Planner created");
+      return;
+    }
+
+    planner.planner.fluids.push({
+      fluidId: _id,
+      amount,
+    });
+
+    await planner.save();
+
+    res.status(200).json(dateString);
+  } catch (err) {
+    console.log(err);
+    res.status(500);
+    return;
+  }
+});
+
+router.delete("/planner/remove-meal/:id", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      res.status(400).json("wrong id");
+      return;
+    }
+
+    const mealId = new mongoose.Types.ObjectId(id);
+
+    const result = await Planner.findOneAndUpdate(
+      { userId: user._id, "planner.meals._id": mealId },
+      { $pull: { "planner.meals": { _id: mealId } } },
+      { new: true }
+    );
+
+    if (result) {
+      res.status(200).json("meal deleted");
+      return;
+    }
+
+    res.status(404).json("meal not found or not belongs to you");
+  } catch (err) {
+    console.log(err);
+    res.status(500).json();
+    return;
+  }
+});
+
 export default router;
