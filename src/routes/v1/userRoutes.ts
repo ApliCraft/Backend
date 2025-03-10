@@ -22,7 +22,7 @@ import {
 import { verifyAccessToken } from "../../utils/jwt";
 import User, { UserType } from "../../models/userModel";
 import mongoose, { isValidObjectId, Types } from "mongoose";
-import z from "zod";
+import z, { date } from "zod";
 import Product from "../../models/productModel";
 import _ from "ollama/browser";
 import Planner, { FluidType, MealType } from "../../models/plannerModel";
@@ -1059,7 +1059,7 @@ router.post("/planner/fluid-count", async (req, res) => {
     });
 
     if (!planner) {
-      res.status(404).json("planner not found, maybe it doesnt exist?");
+      res.status(404).json("planner not found, maybe it doesn't exist?");
       return;
     }
 
@@ -1067,13 +1067,76 @@ router.post("/planner/fluid-count", async (req, res) => {
       (total, fluid) => total + fluid.amount,
       0
     );
-    res
-      .status(200)
-      .json({
-        dateString,
-        consumed: totalFluidAmount,
-        amount: planner.fluidIntakeAmount,
-      });
+    res.status(200).json({
+      dateString,
+      consumed: totalFluidAmount,
+      amount: planner.fluidIntakeAmount,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500);
+    return;
+  }
+});
+
+const updateFluidSchema = z.object({
+  amount: z.number(),
+});
+
+router.patch("/planner/update-fluid/:id", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = updateFluidSchema.parse(req.body);
+    } catch (err) {
+      console.log(err);
+      res.status(400).json("Some data is missing in your request");
+      return;
+    }
+
+    const { id } = req.params;
+
+    const fluidId = new mongoose.Types.ObjectId(id);
+
+    if (!isValidObjectId(fluidId)) {
+      res.status(400).json("wrong id");
+      return;
+    }
+
+    const { amount } = parsed;
+
+    const result = await Planner.findOneAndUpdate(
+      { userId: user._id, "planner.fluids._id": fluidId },
+      { $set: { "planner.fluids.$.amount": amount } },
+      { new: true }
+    );
+
+    if (result) {
+      res.status(200).json("Fluid amount updated");
+      return;
+    }
+
+    res.status(404).json("Fluid not found or does not belong to you");
   } catch (err) {
     console.log(err);
     res.status(500);
