@@ -867,4 +867,54 @@ router.delete("/planner/remove-meal/:id", async (req, res) => {
   }
 });
 
+router.delete("/planner/remove-fluid/:id", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    const { id } = req.params;
+
+    if (!isValidObjectId(id)) {
+      res.status(400).json("wrong id");
+      return;
+    }
+
+    const fluidId = new mongoose.Types.ObjectId(id);
+
+    const result = await Planner.findOneAndUpdate(
+      { userId: user._id, "planner.fluids._id": fluidId },
+      { $pull: { "planner.fluids": { _id: fluidId } } },
+      { new: true }
+    );
+
+    if (result) {
+      res.status(200).json("fluid deleted");
+      return;
+    }
+
+    res.status(404).json("fluid not found or not belongs to you");
+  } catch (err) {
+    console.log(err);
+    res.status(500).json();
+    return;
+  }
+});
+
 export default router;
