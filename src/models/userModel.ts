@@ -158,6 +158,13 @@ const UserSchema = new Schema({
     type: String,
     required: false,
   },
+
+  healthData: {
+    height: { type: Number },
+    weight: { type: Number },
+    gender: { type: String, enum: ["male", "female"] },
+    activityLevel: { type: Number, min: 0, max: 5 }
+  }
 });
 
 export type UserType = InferSchemaType<typeof UserSchema> &
