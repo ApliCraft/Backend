@@ -738,6 +738,60 @@ router.post("/planner/meals", async (req, res) => {
   }
 });
 
+router.post("/planner/get", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = mealsSchema.parse(req.body);
+    } catch {
+      res.status(400).json("not all data specified in request");
+      return;
+    }
+
+    const { date } = parsed;
+
+    const dateString = formatDate(date);
+
+    const planner = await Planner.findOne({
+      userId: user._id,
+      day: dateString,
+    }).lean();
+
+    if (!planner) {
+      res
+        .status(404)
+        .json("Planner doesn't exist for this day, add some products");
+      return;
+    }
+
+    res.status(200).json(planner);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json();
+    return;
+  }
+});
+
 router.post("/planner/add-fluid", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -906,6 +960,53 @@ router.delete("/planner/remove-fluid/:id", async (req, res) => {
 
     if (result) {
       res.status(200).json("fluid deleted");
+      return;
+    }
+
+    res.status(404).json("fluid not found or not belongs to you");
+  } catch (err) {
+    console.log(err);
+    res.status(500).json();
+    return;
+  }
+});
+
+router.get("/planner/next-meals", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    const now = new Date();
+    const dateString = formatDate(now);
+
+    const result = await Planner.findOne({
+      userId: user._id,
+      day: dateString,
+    });
+
+    if (result) {
+      const upcomingMeals = result.planner.meals
+        .filter((meal) => meal.time > now.toTimeString().slice(0, 5))
+        .sort((a, b) => a.time.localeCompare(b.time));
+
+      res.status(200).json(upcomingMeals);
       return;
     }
 
