@@ -19,7 +19,7 @@ import {
   setAvatar,
   updateUserProfile,
   updateUserHealthData,
-  getHealthData
+  getHealthData,
 } from "../../controllers/userController";
 import { verifyAccessToken } from "../../utils/jwt";
 import User, { UserType } from "../../models/userModel";
@@ -1298,7 +1298,7 @@ router.post("/planner/daily-nutritional-summary", async (req, res) => {
     meals.forEach((meal) => {
       meal.recipes?.forEach((recipe) => {
         if (recipe.recipeId) {
-          if (meal.completed) {
+          if (!meal.completed) {
             // @ts-ignore
             planned.calories += recipe.recipeId.kcalPortion * recipe.portion;
             // @ts-ignore
@@ -1328,36 +1328,40 @@ router.post("/planner/daily-nutritional-summary", async (req, res) => {
 
       meal.products?.forEach((product) => {
         if (product.productId) {
-          if (meal.completed) {
+          if (!meal.completed) {
             // @ts-ignore
-            planned.calories += product.productId.kcalPortion * product.amount;
+            planned.calories +=
+              // @ts-ignore
+              (product.productId.kcalPortion * product.amount) / 100;
             // @ts-ignore
             planned.proteins +=
               // @ts-ignore
-              product.productId.proteinPortion * product.amount;
+              (product.productId.proteinPortion * product.amount) / 100;
             // @ts-ignore
             planned.fats +=
               // @ts-ignore
-              product.productId.fatContentPortion * product.amount;
+              (product.productId.fatContentPortion * product.amount) / 100;
             // @ts-ignore
             planned.carbs +=
               // @ts-ignore
-              product.productId.carbohydratesPortion * product.amount;
+              (product.productId.carbohydratesPortion * product.amount) / 100;
           } else {
             // @ts-ignore
-            consumed.calories += product.productId.kcalPortion * product.amount;
+            consumed.calories +=
+              // @ts-ignore
+              (product.productId.kcalPortion * product.amount) / 100;
             // @ts-ignore
             consumed.proteins +=
               // @ts-ignore
-              product.productId.proteinPortion * product.amount;
+              (product.productId.proteinPortion * product.amount) / 100;
             // @ts-ignore
             consumed.fats +=
               // @ts-ignore
-              product.productId.fatContentPortion * product.amount;
+              (product.productId.fatContentPortion * product.amount) / 100;
             // @ts-ignore
             consumed.carbs +=
               // @ts-ignore
-              product.productId.carbohydratesPortion * product.amount;
+              (product.productId.carbohydratesPortion * product.amount) / 100;
           }
         }
       });
