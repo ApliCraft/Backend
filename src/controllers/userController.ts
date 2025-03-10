@@ -651,3 +651,111 @@ export const updateUserProfile = async (
     return;
   }
 };
+
+export const updateUserHealthData = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+    
+    let decoded;
+    try {
+      decoded = verifyAccessToken(token);
+    } catch (err) {
+      res.status(401).json("Invalid token");
+      return;
+    }
+    
+    if (!decoded) {
+      res.status(401).json("Invalid token");
+      return;
+    }
+    
+    const user = await User.findById(decoded.sub);
+    
+    if (!user) {
+      res.status(404).json("User not found");
+      return;
+    }
+    
+    const { height, weight, gender, activityLevel } = req.body;
+    
+    if (height && (isNaN(height) || height <= 0)) {
+      res.status(400).json("Invalid height");
+      return;
+    }
+    
+    if (weight && (isNaN(weight) || weight <= 0)) {
+      res.status(400).json("Invalid weight");
+      return;
+    }
+    
+    if (gender && !["male", "female"].includes(gender)) {
+      res.status(400).json("Gender must be 'male' or 'female'");
+      return;
+    }
+    
+    if (activityLevel !== undefined && (isNaN(activityLevel) || activityLevel < 0 || activityLevel > 5)) {
+      res.status(400).json("Activity level must be between 0-5");
+      return;
+    }
+    
+    if (!user.healthData) {
+      user.healthData = {
+        height: undefined,
+        weight: undefined,
+        gender: undefined,
+        activityLevel: undefined
+      };
+    }
+    
+    if (height !== undefined) user.healthData.height = height;
+    if (weight !== undefined) user.healthData.weight = weight;
+    if (gender !== undefined) user.healthData.gender = gender;
+    if (activityLevel !== undefined) user.healthData.activityLevel = activityLevel;
+    
+    await user.save();
+    
+    res.status(200).json("Health data updated successfully");
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getHealthData = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+    
+    let decoded;
+    try {
+      decoded = verifyAccessToken(token);
+    } catch (err) {
+      res.status(401).json("Invalid token");
+      return;
+    }
+    
+    if (!decoded) {
+      res.status(401).json("Invalid token");
+      return;
+    }
+    
+    const user = await User.findById(decoded.sub);
+    
+    if (!user) {
+      res.status(404).json("User not found");
+      return;
+    }
+    
+    res.status(200).json(user.healthData || {});
+  } catch (err) {
+    next(err);
+  }
+};

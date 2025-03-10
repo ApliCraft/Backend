@@ -18,6 +18,8 @@ import {
   getUserInfo,
   setAvatar,
   updateUserProfile,
+  updateUserHealthData,
+  getHealthData
 } from "../../controllers/userController";
 import { verifyAccessToken } from "../../utils/jwt";
 import User, { UserType } from "../../models/userModel";
@@ -45,6 +47,8 @@ router.post("/check-token", checkToken);
 router.post("/check-token-strict", checkTokenStrict);
 router.delete("/", validate(GetUserValidatorSchema), deleteUser);
 router.put("/", validate(UpdateUserValidatorSchema), updateUser);
+router.put("/update-user-health-data", updateUserHealthData);
+router.get("/health-data", getHealthData);
 router.get("/logs", async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
