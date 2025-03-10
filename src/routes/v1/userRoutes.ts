@@ -1386,9 +1386,9 @@ router.delete("/planner/remove-from-meal/:id", async (req, res) => {
       {
         $pull: {
           "planner.meals.$.recipes":
-            type === "recipe" ? { recipeId: _id } : undefined,
+            type === "recipe" ? { _id: _id } : undefined,
           "planner.meals.$.products":
-            type === "product" ? { productId: _id } : undefined,
+            type === "product" ? { _id: _id } : undefined,
         },
       },
       { new: true }
