@@ -23,9 +23,10 @@ import { verifyAccessToken } from "../../utils/jwt";
 import User, { UserType } from "../../models/userModel";
 import mongoose, { isValidObjectId, Types } from "mongoose";
 import z, { date } from "zod";
-import Product from "../../models/productModel";
+import Product, { ProductType } from "../../models/productModel";
 import _ from "ollama/browser";
 import Planner, { FluidType, MealType } from "../../models/plannerModel";
+import { RecipeType } from "../../models/recipeModel";
 
 const router: Router = Router();
 
@@ -1137,6 +1138,177 @@ router.patch("/planner/update-fluid/:id", async (req, res) => {
     }
 
     res.status(404).json("Fluid not found or does not belong to you");
+  } catch (err) {
+    console.log(err);
+    res.status(500);
+    return;
+  }
+});
+
+router.post("/planner/daily-nutritional-summary", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = mealsSchema.parse(req.body);
+    } catch (err) {
+      console.log(err);
+      res.status(400).json("Some data is missing in your request");
+      return;
+    }
+
+    const { date } = parsed;
+
+    const dateString = formatDate(date);
+
+    const planner = await Planner.findOne({
+      userId: user._id,
+      day: dateString,
+    })
+      .populate<{ child: ProductType }>({
+        path: "planner.fluids.fluidId",
+        model: "Product",
+      })
+      .populate<{ child: ProductType }>({
+        path: "planner.meals.products.productId",
+        model: "Product",
+      })
+      .populate<{ child: RecipeType }>({
+        path: "planner.meals.recipes.recipeId",
+        model: "Recipe",
+      });
+
+    if (!planner) {
+      res.status(404).json("planner not found, maybe it doesn't exist?");
+      return;
+    }
+
+    // const fluidDetails = planner.planner.fluids.map((fluid) => {
+    //   const { fluidId, amount } = fluid;
+    //   const product = fluidId as ProductType; // Assuming fluidId is populated with ProductType
+    //   return {
+    //     kcals: product.kcalPortion * amount,
+    //     proteins: product.proteinPortion * amount,
+    //     carbohydrates: product.carbohydratesPortion * amount,
+    //     fatContent: product.fatContentPortion * amount,
+    //   };
+    // });
+
+    // const totalNutrients = fluidDetails.reduce(
+    //   (acc, curr) => {
+    //     acc.kcals += curr.kcals;
+    //     acc.proteins += curr.proteins;
+    //     acc.carbohydrates += curr.carbohydrates;
+    //     acc.fatContent += curr.fatContent;
+    //     return acc;
+    //   },
+    //   { kcals: 0, proteins: 0, carbohydrates: 0, fatContent: 0 }
+    // );
+
+    const meals = planner.planner.meals;
+
+    let planned = {
+      calories: 0,
+      proteins: 0,
+      fats: 0,
+      carbs: 0,
+    };
+
+    let consumed = {
+      calories: 0,
+      proteins: 0,
+      fats: 0,
+      carbs: 0,
+    };
+
+    meals.forEach((meal) => {
+      meal.recipes?.forEach((recipe) => {
+        if (recipe.recipeId) {
+          if (meal.completed) {
+            // @ts-ignore
+            planned.calories += recipe.recipeId.kcalPortion * recipe.portion;
+            // @ts-ignore
+            planned.proteins += recipe.recipeId.proteinPortion * recipe.portion;
+            // @ts-ignore
+            planned.fats += recipe.recipeId.fatContentPortion * recipe.portion;
+            // @ts-ignore
+            planned.carbs +=
+              // @ts-ignore
+              recipe.recipeId.carbohydratesPortion * recipe.portion;
+          } else {
+            // @ts-ignore
+            consumed.calories += recipe.recipeId.kcalPortion * recipe.portion;
+            // @ts-ignore
+            consumed.proteins +=
+              // @ts-ignore
+              recipe.recipeId.proteinPortion * recipe.portion;
+            // @ts-ignore
+            consumed.fats += recipe.recipeId.fatContentPortion * recipe.portion;
+            // @ts-ignore
+            consumed.carbs +=
+              // @ts-ignore
+              recipe.recipeId.carbohydratesPortion * recipe.portion;
+          }
+        }
+      });
+
+      meal.products?.forEach((product) => {
+        if (product.productId) {
+          if (meal.completed) {
+            // @ts-ignore
+            planned.calories += product.productId.kcalPortion * product.amount;
+            // @ts-ignore
+            planned.proteins +=
+              // @ts-ignore
+              product.productId.proteinPortion * product.amount;
+            // @ts-ignore
+            planned.fats +=
+              // @ts-ignore
+              product.productId.fatContentPortion * product.amount;
+            // @ts-ignore
+            planned.carbs +=
+              // @ts-ignore
+              product.productId.carbohydratesPortion * product.amount;
+          } else {
+            // @ts-ignore
+            consumed.calories += product.productId.kcalPortion * product.amount;
+            // @ts-ignore
+            consumed.proteins +=
+              // @ts-ignore
+              product.productId.proteinPortion * product.amount;
+            // @ts-ignore
+            consumed.fats +=
+              // @ts-ignore
+              product.productId.fatContentPortion * product.amount;
+            // @ts-ignore
+            consumed.carbs +=
+              // @ts-ignore
+              product.productId.carbohydratesPortion * product.amount;
+          }
+        }
+      });
+    });
+
+    res.status(200).json({ planned, consumed });
   } catch (err) {
     console.log(err);
     res.status(500);
