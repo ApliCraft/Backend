@@ -24,14 +24,32 @@ import {
 import { verifyAccessToken } from "../../utils/jwt";
 import User, { UserType } from "../../models/userModel";
 import mongoose, { isValidObjectId, Types } from "mongoose";
-import z, { date } from "zod";
+import z from "zod";
 import Product, { ProductType } from "../../models/productModel";
 import _ from "ollama/browser";
-import Planner, { FluidType, MealType } from "../../models/plannerModel";
+import Planner, { MealType } from "../../models/plannerModel";
 import { RecipeType } from "../../models/recipeModel";
 
 const router: Router = Router();
 
+router.post("/users", async (req, res) => {
+  const { from, limit } = req.body;
+  let query;
+
+  query = User.find().lean().select("_id");
+
+  if (from !== undefined) {
+    query = query.skip(from);
+  }
+
+  if (limit !== undefined) {
+    query = query.limit(limit);
+  }
+
+  const userIds = await query;
+
+  res.status(200).json(userIds);
+});
 router.put("/set-avatar", setAvatar);
 router.put("/set-description", (_, res) => {
   res.send(500);
@@ -49,6 +67,29 @@ router.delete("/", validate(GetUserValidatorSchema), deleteUser);
 router.put("/", validate(UpdateUserValidatorSchema), updateUser);
 router.put("/update-user-health-data", updateUserHealthData);
 router.get("/health-data", getHealthData);
+router.get("/liked-recipes/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json("Invalid user id.");
+      return;
+    }
+
+    const user = (await User.findById(id)) as UserType;
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    res.status(200).json(user.likedRecipes);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json("An error occurred");
+    return;
+  }
+});
 router.get("/logs", async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
@@ -461,7 +502,7 @@ router.put("/storage/increase-decrease-quantity", async (req, res) => {
   }
 });
 
-const getCurrentDate = () => {
+const _getCurrentDate = () => {
   const date = new Date();
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, "0"); // months are zero-indexed
