@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "version": "v0.21.0",
+  "version": "v0.22.0",
   "description": "The backend for the app.",
   "main": "dist/server.js",
   "scripts": {
@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.0",
     "ollama": "^0.5.14",
+    "socket.io": "^4.8.1",
     "ts-node": "^10.9.2",
     "zod": "^3.24.2"
   },
