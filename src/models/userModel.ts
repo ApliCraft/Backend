@@ -74,6 +74,10 @@ const UserSchema = new Schema({
   isEmailVerified: { type: Boolean, default: false },
   twoFactorEnabled: { type: Boolean, default: false },
   twoFactorMethod: { type: String },
+  fluidIntakeAmount: {
+    type: Number,
+    default: 2000,
+  },
 
   firstName: { type: String },
   lastName: { type: String },
@@ -163,8 +167,9 @@ const UserSchema = new Schema({
     height: { type: Number },
     weight: { type: Number },
     gender: { type: String, enum: ["male", "female"] },
-    activityLevel: { type: Number, min: 0, max: 5 }
-  }
+    activityLevel: { type: Number, min: 0, max: 5 },
+    fluidIntakeAmount: { type: Number, default: 2000 },
+  },
 });
 
 export type UserType = InferSchemaType<typeof UserSchema> &

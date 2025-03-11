@@ -1159,7 +1159,10 @@ router.post("/planner/fluid-count", async (req, res) => {
     });
 
     if (!planner) {
-      res.status(404).json("planner not found, maybe it doesn't exist?");
+      res.status(200).json({
+        consumed: 0,
+        amount: user.healthData?.fluidIntakeAmount,
+      });
       return;
     }
 
@@ -1583,6 +1586,72 @@ router.post("/planner/daily-nutritional-summary", async (req, res) => {
   } catch (err) {
     console.log(err);
     res.status(500);
+    return;
+  }
+});
+
+router.get("/planner/last-meals", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      res.status(400).json("No token provided");
+      return;
+    }
+
+    const decoded = verifyAccessToken(token);
+    if (!decoded) {
+      res.status(401).json("Invalid token.");
+      return;
+    }
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      res.status(404).json("User not found.");
+      return;
+    }
+
+    // Fetch user's planner and meals
+    const result = await Planner.find({ userId: user._id });
+
+    if (result && result.length > 0) {
+      // Extract all meals from the planner
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
+      const now = new Date();
+
+      const sortedPlanners = result
+        .filter((planner) => planner.day && planner.day <= today) // Filter by day <= today
+        .sort((a, b) => (a.day > b.day ? 1 : -1)); // Sort planners by day (ascending)
+
+      // Extract all meals from the planner, filtering by the day property if it exists
+      const allMeals = sortedPlanners.flatMap((planner) => {
+        if (planner.day) {
+          // Check if the planner day is today or before today
+          if (planner.day < today) {
+            return planner.planner.meals;
+          } else if (planner.day === today) {
+            // Include meals for today only if the time is less than the current time
+            return planner.planner.meals.filter((meal) => {
+              const mealTime = new Date(`1970-01-01T${meal.time}:00Z`);
+              return mealTime <= now; // Only include meals whose time is less than or equal to the current time
+            });
+          }
+        }
+        return []; // Return an empty array if no day property is found or day is after today
+      });
+
+      // Filter only incomplete meals
+      const incompleteMeals = allMeals.filter((meal) => !meal.completed);
+
+      res.status(200).json(incompleteMeals);
+      return;
+    }
+
+    res.status(404).json("Planner not found or doesn't belong to you");
+  } catch (err) {
+    console.log(err);
+    res.status(500).json("Server error");
     return;
   }
 });
