@@ -29,6 +29,7 @@ import Product, { ProductType } from "../../models/productModel";
 import _ from "ollama/browser";
 import Planner, { MealType } from "../../models/plannerModel";
 import { RecipeType } from "../../models/recipeModel";
+import { cp } from "fs";
 
 const router: Router = Router();
 
@@ -633,6 +634,11 @@ router.post("/planner/add-meal", async (req, res) => {
 
     await planner.save();
 
+    if (completed) {
+      user.lastMeals.push(new mongoose.Types.ObjectId(_id));
+      await user.save();
+    }
+
     res.status(200).json(dateString);
   } catch (err) {
     console.log(err);
@@ -821,6 +827,11 @@ router.patch("/planner/change-completion/:id", async (req, res) => {
       { $set: { "planner.meals.$.completed": completed } },
       { new: true }
     );
+
+    if (completed === true) {
+      user.lastMeals.push(mealId);
+      await user.save();
+    }
 
     if (result) {
       res.status(200).json("meal updated");
@@ -1606,46 +1617,50 @@ router.get("/planner/last-meals/:id", async (req, res) => {
       return;
     }
 
-    // Fetch user's planner and meals
-    const result = await Planner.find({ userId: user._id });
-
-    if (result && result.length > 0) {
-      // Extract all meals from the planner
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD format
-      const now = new Date();
-
-      const sortedPlanners = result
-        .filter((planner) => planner.day && planner.day <= today) // Filter by day <= today
-        .sort((a, b) => (a.day > b.day ? 1 : -1)); // Sort planners by day (ascending)
-
-      // Extract all meals from the planner, filtering by the day property if it exists
-      const allMeals = sortedPlanners.flatMap((planner) => {
-        if (planner.day) {
-          // Check if the planner day is today or before today
-          if (planner.day < today) {
-            return planner.planner.meals;
-          } else if (planner.day === today) {
-            // Include meals for today only if the time is less than the current time
-            return planner.planner.meals.filter((meal) => {
-              const mealTime = new Date(`1970-01-01T${meal.time}:00Z`);
-              return mealTime <= now; // Only include meals whose time is less than or equal to the current time
-            });
-          }
-        }
-        return []; // Return an empty array if no day property is found or day is after today
-      });
-
-      // Filter only incomplete meals
-      const incompleteMeals = allMeals.filter((meal) => !meal.completed);
-
-      res.status(200).json(incompleteMeals);
-      return;
-    }
-
-    res.status(404).json("Planner not found or doesn't belong to you");
+    res.status(200).json(user.lastMeals);
   } catch (err) {
     console.log(err);
     res.status(500).json("Server error");
+    return;
+  }
+});
+
+router.get("/planner/meal/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const fluidId = new mongoose.Types.ObjectId(id);
+
+    if (!isValidObjectId(fluidId)) {
+      res.status(400).json("wrong id");
+      return;
+    }
+
+    if (!isValidObjectId(id)) {
+      res.status(400).json("id is not correct");
+      return;
+    }
+
+    const result = await Planner.findOne({
+      "planner.meals._id": id,
+    });
+
+    if (result) {
+      // Find the specific meal inside the planner
+      const meal = result.planner.meals.find(
+        (meal) => meal._id?.toString() === fluidId.toString()
+      );
+
+      if (meal) {
+        res.status(200).json(meal);
+        return;
+      }
+    }
+
+    res.status(404).json("Meal not found");
+  } catch (err) {
+    console.log(err);
+    res.status(500);
     return;
   }
 });

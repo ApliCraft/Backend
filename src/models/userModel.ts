@@ -170,6 +170,11 @@ const UserSchema = new Schema({
     activityLevel: { type: Number, min: 0, max: 5 },
     fluidIntakeAmount: { type: Number, default: 2000 },
   },
+
+  lastMeals: {
+    type: [mongoose.Schema.Types.ObjectId],
+    default: [],
+  },
 });
 
 export type UserType = InferSchemaType<typeof UserSchema> &
