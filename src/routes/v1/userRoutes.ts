@@ -1590,22 +1590,16 @@ router.post("/planner/daily-nutritional-summary", async (req, res) => {
   }
 });
 
-router.get("/planner/last-meals", async (req, res) => {
+router.get("/planner/last-meals/:id", async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    const { id } = req.params;
 
-    if (!token) {
-      res.status(400).json("No token provided");
+    if (!isValidObjectId(id)) {
+      res.status(400).json("wrong id");
       return;
     }
 
-    const decoded = verifyAccessToken(token);
-    if (!decoded) {
-      res.status(401).json("Invalid token.");
-      return;
-    }
-
-    const user = await User.findById(decoded.sub);
+    const user = await User.findById(id);
 
     if (!user) {
       res.status(404).json("User not found.");
